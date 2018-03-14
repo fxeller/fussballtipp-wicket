@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+	<head>
+		<title>XMans Fussballtipp</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet" />
+	</head>
+	<body>
+		<wicket:extend>
+			<h1>Laberbox</h1>
+			<div wicket:id="rptBetgroupFilter">
+				<a class="buttonlink" href="#" wicket:id="lnkBetgroupFilter"><span wicket:id="lblBetgroupFilter">[Betgroup.Description]</span></a>
+			</div>
+			<form wicket:id="frmAddPosting">
+				<fieldset>
+					<legend>Neuer Beitrag</legend>
+					<div>
+						<textarea style="width: 100%; height: 150px" wicket:id="memNewPosting"></textarea>
+					</div>
+					<div>
+						<input type="submit" value="Beitrag senden"/>
+					</div>
+				</fieldset>
+			</form>
+			<div wicket:id="pnlFeedback">[Feedback]</div>
+			<br>
+			<div class="postnav">
+				<a class="textlink" style="float: left;" wicket:id="lnkNewerUserPost">Neuere Beiträge</a>
+				<a class="textlink" style="float: right" wicket:id="lnkOlderUserPost">Ältere Beiträge</a>
+			</div>
+			<div class="post" wicket:id="rptUserPosts">
+				<div>
+					<span wicket:id="lblUseFullname">[UserPost.User.Fullname]</span>
+					<span style="float: right;" wicket:id="lblCreateDate">[UserPost.CreateDate]</span>
+				</div>
+				<span wicket:id="lblUserPost">[UserPost.post]</span>
+				<a class="textlink" wicket:id="lnkDeletUserPost">Löschen</a>
+			</div>
+		</wicket:extend>
+	</body>
+</html>

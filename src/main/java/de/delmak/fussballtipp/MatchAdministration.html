@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+	<head>
+		<title>XMans Fussballtipp</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet" />
+	</head>
+	<body>
+		<wicket:extend>
+			<div wicket:id="pnlData">
+				<a href="#" wicket:id="lnkBackToMaster">Zurück</a>
+				<p>
+				<table>
+					<thead>
+						<th>Datum/Uhrzeit</th>
+						<th>Heimmannschaft</th>
+						<th>Gastmannschaft</th>
+						<th>Finale</th>
+						<th><a href="#" wicket:id="lnkInsertData"><img src="insert.png"/></a></th>
+					</thead>
+					<tr wicket:id="rptData">
+						<td wicket:id="fldDatetime">[Match.datetime]</td>
+						<td wicket:id="fldTeamnameHome">[Match.TeamHome.description]</td>
+						<td wicket:id="fldTeamnameGuest">[Match.TeamGuest.description]</td>
+						<td wicket:id="fldIsFinals">[Match.isfinals]</td>
+						<td>
+							<a href="#" wicket:id="lnkModifyData"><img src="modify.png"/></a>
+							<a href="#" wicket:id="lnkDeleteData"><img src="delete.png"/></a>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<form wicket:id="frmData">
+				<fieldset>
+					<legend><span wicket:id="lblDataformHeader">[DataformHeader]</span></legend>
+					<div>
+						<label for="txtDatetime">Datum/Uhrzeit: </label>
+						<span wicket:id="txtDatetime"></span>
+					</div>
+					<div>
+						<label for="cboTeamHome">Heimmannschaft: </label>
+						<select wicket:id="cboTeamHome"/>
+					</div>
+					<div>
+						<label for="cboTeamGuest">Gastmannschaft: </label>
+						<select wicket:id="cboTeamGuest"/>
+					</div>
+					<div>
+						<label for="chkIsFinals">Finale: </label>
+						<input type="checkbox" wicket:id="chkIsFinals"/>
+					</div>
+					<div>
+						<label></label>
+						<input type="submit" value="Bestätigen"/>
+					</div>
+				</fieldset>
+			</form>
+			<div wicket:id="pnlFeedback">[Feedback]</div>
+		</wicket:extend>
+	</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+	<head>
+		<title>XMans Fussballtipp</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet" />
+	</head>
+	<body>
+		<wicket:extend>
+			<div wicket:id="pnlData">
+				<a href="#" wicket:id="lnkSendMailToAllUsers"><img src="mail.png"/></a>
+				<table>
+					<thead>
+						<th>Benutzername</th>
+						<th>Nachname</th>
+						<th>Vorname</th>
+						<th>EMail</th>
+						<th>Rollen</th>
+						<th>Tippgruppen</th>
+						<th><a href="#" wicket:id="lnkInsertData"><img src="insert.png"/></a></th>
+					</thead>
+					<tr wicket:id="rptData">
+						<td wicket:id="fldUsername">[User.username]</td>
+						<td wicket:id="fldLastname">[User.lastname]</td>
+						<td wicket:id="fldFirstname">[User.firstname]</td>
+						<td wicket:id="fldEmail">[User.email]</td>
+						<td wicket:id="fldRoles">[User.Roles]</td>
+						<td wicket:id="fldBetgroups">[User.Betgroups]</td>
+						<td>
+							<a href="#" wicket:id="lnkModifyData"><img src="modify.png"/></a>
+							<a href="#" wicket:id="lnkDeleteData"><img src="delete.png"/></a>
+							<a href="#" wicket:id="lnkSendAccountData"><img src="mail.png"/></a>
+							<a href="#" wicket:id="lnkResetPassword"><img src="back.png"/></a>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<form wicket:id="frmData">
+				<fieldset>
+					<legend><span wicket:id="lblDataformHeader">[DataformHeader]</span></legend>
+					<div>
+						<label for="txtUsername">Benutzername: </label>
+						<input type="text" wicket:id="txtUsername"/>
+					</div>
+					<div>
+						<label for="txtFirstname">Vorname: </label>
+						<input type="text" wicket:id="txtFirstname"/>
+					</div>
+					<div>
+						<label for="txtLastname">Nachname: </label>
+						<input type="text" wicket:id="txtLastname"/>
+					</div>
+					<div>
+						<label for="txtEmail">EMail: </label>
+						<input type="text" wicket:id="txtEmail"/>
+					</div>
+					<hr>
+					<div>
+						<label for="cboRoles">Rollen: </label>
+						<div class="checkboxselect" wicket:id="cboRoles">[Checkboxes]</div>
+					</div>
+					<hr>
+					<div>
+						<label for="cboBetgroups">Tippgruppen: </label>
+						<div class="checkboxselect" wicket:id="cboBetgroups">[Checkboxes]</div>
+					</div>
+					<div>
+						<label></label>
+						<input type="submit" value="Bestätigen"/>
+					</div>
+				</fieldset>
+			</form>
+			<div wicket:id="pnlFeedback">[Feedback]</div>
+		</wicket:extend>
+	</body>
+</html>

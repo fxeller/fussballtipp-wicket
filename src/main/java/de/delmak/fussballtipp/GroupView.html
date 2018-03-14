@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+	<head>
+		<title>XMans Fussballtipp</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet" />
+	</head>
+	<body>
+		<wicket:extend>
+			<h1>Gruppenübersicht</h1>
+			<div wicket:id="rptBrackets">
+				<h2 wicket:id="lblBracketDescription">[BracketStandings.bracketDescription]</h2>
+				<table>
+					<thead>
+						<th style="width: 150px">Mannschaft</th>
+						<th>Punkte</th>
+						<th>Spiele</th>
+						<th style="width: 20px">S</th>
+						<th style="width: 20px">U</th>
+						<th style="width: 20px">N</th>
+						<th style="width: 50px">Tore</th>
+						<th>Diff.</th>
+					</thead>
+					<tr wicket:id="rptData">
+						<td wicket:id="fldTeamDescription">[BracketStandings.teamDescription]</td>
+						<td wicket:id="fldPoints">[BracketStandings.points]</td>
+						<td wicket:id="fldMatchesPlayed">[BracketStandings.matchesplayed]</td>
+						<td wicket:id="fldWins">[BracketStandings.wins]</td>
+						<td wicket:id="fldDraws">[BracketStandings.draws]</td>
+						<td wicket:id="fldLosses">[BracketStandings.losses]</td>
+						<td wicket:id="fldScoreSummary">[BracketStandings.scoreSummary]</td>
+						<td wicket:id="fldScoreDiff">[BracketStandings.scorediff]</td>
+					</tr>
+				</table>
+			</div>
+		</wicket:extend>
+	</body>
+</html>

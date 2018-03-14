@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class 
+		name="de.delmak.fussballtipp.persistence.UserRole"
+		table="`UserRole`">
+		
+		<id 
+			name="userRoleId" 
+			column="`userRoleId`" 
+			type="integer">
+			<generator class="sequence">
+				<param name="sequence">`UserRole_userRoleId_seq`</param>
+			</generator>
+		</id>
+		
+		<many-to-one 
+			name="user"
+			column="`userId`"
+			class="de.delmak.fussballtipp.persistence.User"/>
+
+		<many-to-one 
+			name="role"
+			column="`roleId`"
+			class="de.delmak.fussballtipp.persistence.Role"/>
+	</class>
+</hibernate-mapping>

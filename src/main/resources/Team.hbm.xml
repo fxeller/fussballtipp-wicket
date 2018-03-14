@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class 
+		name="de.delmak.fussballtipp.persistence.Team"
+		table="`Team`">
+		
+		<id 
+			name="teamId" 
+			column="`teamId`" 
+			type="integer">
+			<generator class="sequence">
+				<param name="sequence">`Team_teamId_seq`</param>
+			</generator>
+		</id>
+
+		<property 
+			name="teamname" 
+			column="`teamname`" 
+			type="string">
+		</property>
+
+		<property 
+			name="description" 
+			column="`description`" 
+			type="string">
+		</property>
+
+		<set
+			name="bracketTeams"
+			cascade="all-delete-orphan">
+			<key column="`teamId`" update="false"/>
+			<one-to-many class="de.delmak.fussballtipp.persistence.BracketTeam"/>
+		</set>
+	</class>
+	
+	<query name="getTeamById">
+		<![CDATA[
+			from Team t1
+			where t1.teamId = :id
+		]]>
+	</query>
+
+	<query name="getTeamByName">
+		<![CDATA[
+			from Team t1
+			where t1.teamname = :name
+		]]>
+	</query>
+
+	<query name="getTeamsAll">
+		<![CDATA[
+			from Team t1
+		]]>
+	</query>
+
+	<query name="getTeamsByBracketId">
+		<![CDATA[
+			from Team t1
+			where t1.teamId in (select t2.team.teamId from BracketTeam t2 where t2.bracket.bracketId = :bracketId)
+		]]>
+	</query>
+</hibernate-mapping>

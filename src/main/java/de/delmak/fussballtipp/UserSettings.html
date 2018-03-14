@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+	<head>
+		<title>XMans Fussballtipp</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet" />
+	</head>
+	<body>
+		<wicket:extend>
+			<h1>Einstellungen</h1>
+			<form wicket:id="frmSettings">
+				<fieldset>
+					<legend>Benutzerdaten</legend>
+					<div>
+						<label for="txtFirstname">Vorname: </label>
+						<input type="text" wicket:id="txtFirstname"/>
+					</div>
+					<div>
+						<label for="txtLastname">Nachname: </label>
+						<input type="text" wicket:id="txtLastname"/>
+					</div>
+					<div>
+						<label for="txtEmail">EMail: </label>
+						<input type="text" wicket:id="txtEmail"/>
+					</div>
+					<div>
+						<label></label>
+						<input type="submit" value="Bestätigen"/>
+					</div>
+				</fieldset>
+			</form>
+			<br>
+			<form wicket:id="frmChangePassword">
+				<fieldset>
+					<legend>Passwort ändern</legend>
+					<div>
+						<label for="txtOldPassword">Altes Passwort: </label>
+						<input type="password" wicket:id="txtOldPassword"/>
+					</div>
+					<div>
+						<label for="txtNewPassword1">Neues Passwort 1 Wdh.: </label>
+						<input type="password" wicket:id="txtNewPassword1"/>
+					</div>
+					<div>
+						<label for="txtNewPassword2">Neues Passwort 2 Wdh.: </label>
+						<input type="password" wicket:id="txtNewPassword2"/>
+					</div>
+					<div>
+						<label></label>
+						<input type="submit" value="Passwort ändern"/>
+					</div>
+				</fieldset>
+			</form>
+			<div wicket:id="pnlFeedback">[Feedback]</div>
+		</wicket:extend>
+	</body>
+</html>

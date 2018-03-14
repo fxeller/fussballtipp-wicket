@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class 
+		name="de.delmak.fussballtipp.persistence.UserBetgroup"
+		table="`UserBetgroup`">
+		
+		<id 
+			name="userBetgroupId" 
+			column="`userBetgroupId`" 
+			type="integer">
+			<generator class="sequence">
+				<param name="sequence">`UserBetgroup_userBetgroupId_seq`</param>
+			</generator>
+		</id>
+		
+		<many-to-one 
+			name="user"
+			column="`userId`"
+			class="de.delmak.fussballtipp.persistence.User"/>
+
+		<many-to-one 
+			name="betgroup"
+			column="`betgroupId`"
+			class="de.delmak.fussballtipp.persistence.Betgroup"/>
+	</class>
+
+	<query name="getUsersByBetgroupId">
+		<![CDATA[
+			select t1.user.userId
+			from UserBetgroup t1
+			where t1.betgroup.betgroupId = :betgroupId
+		]]>
+	</query>
+
+	<query name="getBetgroupsByUserId">
+		<![CDATA[
+			select t1.betgroup
+			from UserBetgroup t1
+			where t1.user.userId = :userId
+		]]>
+	</query>
+</hibernate-mapping>

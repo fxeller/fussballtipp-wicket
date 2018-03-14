@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+	<head>
+		<title>XMans Fussballtipp</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet" />
+	</head>
+	<body>
+		<wicket:extend>
+			<div wicket:id="pnlData">
+				<a href="#" wicket:id="lnkBackToMaster">Zurück</a>
+				<p>
+				<table>
+					<thead>
+						<th>Team</th>
+						<th><a href="#" wicket:id="lnkInsertData"><img src="insert.png"/></a></th>
+					</thead>
+					<tr wicket:id="rptData">
+						<td wicket:id="fldTeamname">[BracketTeam.Team.teamname]</td>
+						<td>
+							<a href="#" wicket:id="lnkDeleteData"><img src="delete.png"/></a>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<form wicket:id="frmData">
+				<fieldset>
+					<legend><span wicket:id="lblDataformHeader">[DataformHeader]</span></legend>
+					<div>
+						<label for="cboTeam">Team: </label>
+						<select wicket:id="cboTeam"/>
+					</div>
+					<div>
+						<label></label>
+						<input type="submit" value="Bestätigen"/>
+					</div>
+				</fieldset>
+			</form>
+			<div wicket:id="pnlFeedback">[Feedback]</div>
+		</wicket:extend>
+	</body>
+</html>

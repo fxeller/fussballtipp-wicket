@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class 
+		name="de.delmak.fussballtipp.persistence.UserBetScoreAggr"
+		table="`UserBetScoreAggr`">
+		
+		<id 
+			name="userId" 
+			column="`userId`" 
+			type="integer">
+		</id>
+				
+		<many-to-one 
+			name="user"
+			column="`userId`"
+			insert="false"
+			update="false"
+			class="de.delmak.fussballtipp.persistence.User"/>
+
+		<property 
+			name="score" 
+			column="`score`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="rank" 
+			column="`rank`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="winparts" 
+			column="`winparts`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="betgroupId" 
+			column="`betgroupId`" 
+			type="integer">
+		</property>
+	</class>
+
+	<query name="getUserBetScoresByBetgroupId">
+		<![CDATA[
+			from UserBetScoreAggr t1
+			join fetch t1.user
+			where t1.betgroupId = :betgroupId
+			order by t1.score desc, t1.user.firstname, t1.user.lastname
+		]]>
+	</query>
+
+	<query name="getWinPartsByBetgroupId">
+		<![CDATA[
+			select sum(t1.winparts)
+			from UserBetScoreAggr t1
+			where t1.betgroupId = :betgroupId
+		]]>
+	</query>
+</hibernate-mapping>

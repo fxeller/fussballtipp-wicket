@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+	<head>
+		<title>XMans Fussballtipp</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet" />
+	</head>
+	<body>
+		<div class="wrapper">
+			<div class="header">
+			</div>
+			<div class="main">
+				<div class="box navbar">
+					<img src="logo.png"/>
+					<ul class="menu">
+						<wicket:enclosure child="lnkHome"><li><a href="#" wicket:id="lnkHome">Home</a></li></wicket:enclosure>
+						<wicket:enclosure child="lnkRanking"><li><a href="#" wicket:id="lnkRanking">Rangliste</a></li></wicket:enclosure>
+						<wicket:enclosure child="lnkChat"><li><a href="#" wicket:id="lnkChat">Laberbox</a></li></wicket:enclosure>
+						<wicket:enclosure child="lnkGroupView"><li><a href="#" wicket:id="lnkGroupView">Gruppenübersicht</a></li></wicket:enclosure>
+						<wicket:enclosure child="lnkAllMatches">
+						<li>
+							<a href="#">Tipps</a>							
+							<ul class="menu">
+								<wicket:enclosure child="lnkAllMatches"><li><a href="#" wicket:id="lnkAllMatches">Alle Spiele</a></li></wicket:enclosure>
+								<li wicket:id="rptPhases"><a href="#" wicket:id="lnkPhase"><span wicket:id="lblPhaseDescription">[phase.description]</span></a></li>
+								<wicket:enclosure child="lnkSpecialBets"><li><a href="#" wicket:id="lnkSpecialBets">Sondertipps</a></li></wicket:enclosure>
+							</ul>
+						</li>
+						</wicket:enclosure>
+						<wicket:enclosure child="lnkUserSettings"><li><a href="#" wicket:id="lnkUserSettings">Einstellungen</a></li></wicket:enclosure>
+						<wicket:enclosure child="lnkRules"><li><a href="#" wicket:id="lnkRules">Spielregeln</a></li></wicket:enclosure>
+						<wicket:enclosure child="lnkUserAdministration">
+						<li>
+							<a href="#">Administration</a>
+							<ul class="menu">
+								<wicket:enclosure child="lnkUserAdministration"><li><a href="#" wicket:id="lnkUserAdministration">Benutzer</a></li></wicket:enclosure>
+								<wicket:enclosure child="lnkRoleAdministration"><li><a href="#" wicket:id="lnkRoleAdministration">Rollen</a></li></wicket:enclosure>
+								<wicket:enclosure child="lnkTeamAdministration"><li><a href="#" wicket:id="lnkTeamAdministration">Mannschaften</a></li></wicket:enclosure>
+								<wicket:enclosure child="lnkPhaseAdministration"><li><a href="#" wicket:id="lnkPhaseAdministration">Turnierphasen</a></li></wicket:enclosure>
+								<wicket:enclosure child="lnkBetgroupAdministration"><li><a href="#" wicket:id="lnkBetgroupAdministration">Tippgruppen</a></li></wicket:enclosure>
+							</ul>
+						</li>
+						</wicket:enclosure>
+						<wicket:enclosure child="lnkLogin"><li><a href="#" wicket:id="lnkLogin">Login</a></li></wicket:enclosure>
+						<wicket:enclosure child="lnkLogout"><li><a href="#" wicket:id="lnkLogout">Logout</a></li></wicket:enclosure>
+					</ul>
+				</div>
+				<div class="box content">
+					<div class="contentheader">Flos Euro 2016 - Tipp</div>
+					<div class="contentbody">
+						<wicket:child/>
+					</div>
+				</div>
+				<div class="box infobar">
+				</div>
+			</div>
+			<div class="footer">
+				<span wicket:id="lblLoginStatus">Hier steht der Loginstatus</span>
+			</div>
+		</div>
+	</body>
+</html>

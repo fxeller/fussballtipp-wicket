@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class 
+		name="de.delmak.fussballtipp.persistence.User"
+		table="`User`">
+		
+		<id 
+			name="userId" 
+			column="`userId`" 
+			type="integer">
+			<generator class="sequence">
+				<param name="sequence">`User_userId_seq`</param>
+			</generator>
+		</id>
+
+		<property 
+			name="username" 
+			column="`username`" 
+			type="string">
+		</property>
+
+		<property 
+			name="password" 
+			column="`password`" 
+			type="string">
+		</property>
+
+		<property 
+			name="lastname" 
+			column="`lastname`" 
+			type="string">
+		</property>
+
+		<property 
+			name="firstname" 
+			column="`firstname`" 
+			type="string">
+		</property>
+
+		<property 
+			name="email" 
+			column="`email`" 
+			type="string">
+		</property>
+		
+		<property 
+			name="passwordinit" 
+			column="`passwordinit`" 
+			type="string">
+		</property>
+
+		<set
+			name="userRoles"
+			cascade="all-delete-orphan">
+			<key column="`userId`" update="false"/>
+			<one-to-many class="de.delmak.fussballtipp.persistence.UserRole"/>
+		</set>
+		
+		<set
+			name="userBetgroups"
+			cascade="all-delete-orphan">
+			<key column="`userId`" update="false"/>
+			<one-to-many class="de.delmak.fussballtipp.persistence.UserBetgroup"/>
+		</set>
+	</class>
+	
+	<query name="getUserById">
+		<![CDATA[
+			from User t1
+			where t1.userId = :id
+		]]>
+	</query>
+
+	<query name="getUserByName">
+		<![CDATA[
+			from User t1
+			where t1.username = :name
+		]]>
+	</query>
+
+	<query name="getUsersAll">
+		<![CDATA[
+			from User t1
+			order by t1.username
+		]]>
+	</query>
+</hibernate-mapping>

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class 
+		name="de.delmak.fussballtipp.persistence.Bet"
+		table="`Bet`">
+		
+		<id 
+			name="betId" 
+			column="`betId`" 
+			type="integer">
+			<generator class="sequence">
+				<param name="sequence">`Bet_betId_seq`</param>
+			</generator>
+		</id>
+		
+		<many-to-one 
+			name="user"
+			column="`userId`"
+			class="de.delmak.fussballtipp.persistence.User"/>
+
+		<property 
+			name="betkind" 
+			column="`betkind`" 
+			type="string">
+		</property>
+
+		<property 
+			name="matchId" 
+			column="`matchId`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="scoreHome" 
+			column="`scoreHome`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="scoreGuest" 
+			column="`scoreGuest`" 
+			type="integer">
+		</property>
+
+		<many-to-one 
+			name="team"
+			column="`teamId`"
+			class="de.delmak.fussballtipp.persistence.Team"/>
+
+		<property 
+			name="bracketId" 
+			column="`bracketId`" 
+			type="integer">
+		</property>
+	</class>
+
+	<query name="getBetById">
+		<![CDATA[
+			from Bet t1
+			where t1.betId = :id
+		]]>
+	</query>
+
+	<query name="getBetByUserAndBetKindAndMatchId">
+		<![CDATA[
+			from Bet t1
+			where t1.user.userId = :userId and t1.betkind = :betkind and t1.matchId = :matchId
+		]]>
+	</query>
+
+	<query name="getBetByUserAndBetKindAndBracketId">
+		<![CDATA[
+			from Bet t1
+			where t1.user.userId = :userId and t1.betkind = :betkind and t1.bracketId = :bracketId
+		]]>
+	</query>
+
+	<query name="getBetByUserAndBetKind">
+		<![CDATA[
+			from Bet t1
+			where t1.user.userId = :userId and t1.betkind = :betkind
+		]]>
+	</query>
+
+	<query name="getBetsByBetKindAndMatchId">
+		<![CDATA[
+			from Bet t1
+			inner join fetch t1.user
+			where t1.betkind = :betkind and t1.matchId = :matchId and t1.user.userId in (:userIds)
+			order by t1.user.firstname, t1.user.lastname, t1.betId
+		]]>
+	</query>
+
+	<query name="getBetsByBetKindAndBracketId">
+		<![CDATA[
+			from Bet t1
+			inner join fetch t1.user
+			where t1.betkind = :betkind and t1.bracketId = :bracketId and t1.user.userId in (:userIds)
+			order by t1.user.firstname, t1.user.lastname, t1.betId
+		]]>
+	</query>
+
+	<query name="getBetsByBetKind">
+		<![CDATA[
+			from Bet t1
+			inner join fetch t1.user
+			where t1.betkind = :betkind and t1.user.userId in (:userIds)
+			order by t1.user.firstname, t1.user.lastname, t1.betId
+		]]>
+	</query>
+
+	<query name="getBetsByUserId">
+		<![CDATA[
+			from Bet t1
+			where t1.user.userId = :userId
+		]]>
+	</query>
+</hibernate-mapping>

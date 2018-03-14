@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+	<head>
+		<title>XMans Fussballtipp</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet" />
+	</head>
+	<body>
+		<wicket:extend>
+			<h1>Tippabgabe</h1>
+			<a href="#" wicket:id="lnkBackToMaster"><img src="back.png" title="Zurück"/></a>
+			<p>
+			<form wicket:id="frmBetPlacing">
+				<fieldset>
+					<legend>Ergebnis</legend>
+					<div wicket:id="pnlScoreHome">
+						<label for="txtScoreHome"><span wicket:id="lblTeamHome">[Match.TeamHome]</span></label>
+						<input type="text" wicket:id="txtScoreHome"/>
+					</div>
+					<div wicket:id="pnlScoreGuest">
+						<label for="txtScoreGuest"><span wicket:id="lblTeamGuest">[Match.TeamGuest]</span></label>
+						<input type="text" wicket:id="txtScoreGuest"/>
+					</div>
+					<div wicket:id="pnlTeam">
+						<label for="cboTeam"><span wicket:id="lblWinnerKind">[WinnerKind]</span></label>
+						<select wicket:id="cboTeam"/>
+					</div>
+					<div>
+						<label></label>
+						<input type="submit" value="Tipp abgeben"/>
+					</div>
+				</fieldset>
+			</form>
+			<div wicket:id="pnlFeedback">[Feedback]</div>
+		</wicket:extend>
+	</body>
+</html>

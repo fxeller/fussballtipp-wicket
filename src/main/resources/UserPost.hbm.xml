@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class 
+		name="de.delmak.fussballtipp.persistence.UserPost"
+		table="`UserPost`">
+		
+		<id 
+			name="userPostId" 
+			column="`userPostId`" 
+			type="integer">
+			<generator class="sequence">
+				<param name="sequence">`UserPost_userPostId_seq`</param>
+			</generator>
+		</id>
+		
+		<property 
+			name="post" 
+			column="`post`" 
+			type="text">
+		</property>
+
+		<property 
+			name="createdate" 
+			column="`createdate`" 
+			type="timestamp">
+		</property>
+
+		<many-to-one 
+			name="user"
+			column="`userId`"
+			class="de.delmak.fussballtipp.persistence.User"/>
+
+		<many-to-one 
+			name="betgroup"
+			column="`betgroupId`"
+			class="de.delmak.fussballtipp.persistence.Betgroup"/>
+	</class>
+
+	<query name="getUserPostById">
+		<![CDATA[
+			from UserPost t1
+			where t1.userPostId = :id
+		]]>
+	</query>
+
+	<query name="getUserPostsByBetgroupId">
+		<![CDATA[
+			from UserPost t1
+			where t1.betgroup.betgroupId = :betgroupId
+			order by t1.createdate desc
+		]]>
+	</query>
+
+	<query name="getUserPostCountByBetgroupId">
+		<![CDATA[
+			select count(t1.userPostId)
+			from UserPost t1
+			where t1.betgroup.betgroupId = :betgroupId
+		]]>
+	</query>
+</hibernate-mapping>

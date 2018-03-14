@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class 
+		name="de.delmak.fussballtipp.persistence.Role"
+		table="`Role`">
+		
+		<id 
+			name="roleId" 
+			column="`roleId`" 
+			type="integer">
+			<generator class="sequence">
+				<param name="sequence">`Role_roleId_seq`</param>
+			</generator>
+		</id>
+
+		<property 
+			name="rolename" 
+			column="`rolename`" 
+			type="string">
+		</property>
+
+		<property 
+			name="description" 
+			column="`description`" 
+			type="string">
+		</property>
+		
+		<set
+			name="userRoles"
+			cascade="all-delete-orphan">
+			<key column="`roleId`" update="false"/>
+			<one-to-many class="de.delmak.fussballtipp.persistence.UserRole"/>
+		</set>
+	</class>
+	
+	<query name="getRoleById">
+		<![CDATA[
+			from Role t1
+			where t1.roleId = :id
+		]]>
+	</query>
+
+	<query name="getRoleByName">
+		<![CDATA[
+			from Role t1
+			where t1.rolename = :name
+		]]>
+	</query>
+
+	<query name="getRolesAll">
+		<![CDATA[
+			from Role t1
+		]]>
+	</query>
+</hibernate-mapping>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class 
+		name="de.delmak.fussballtipp.persistence.Bracket"
+		table="`Bracket`">
+		
+		<id 
+			name="bracketId" 
+			column="`bracketId`" 
+			type="integer">
+			<generator class="sequence">
+				<param name="sequence">`Bracket_bracketId_seq`</param>
+			</generator>
+		</id>
+
+		<property 
+			name="bracketname" 
+			column="`bracketname`" 
+			type="string">
+		</property>
+
+		<property 
+			name="description" 
+			column="`description`" 
+			type="string">
+		</property>
+
+		<many-to-one 
+			name="phase"
+			column="`phaseId`"
+			class="de.delmak.fussballtipp.persistence.Phase" />
+
+		<set
+			name="bracketTeams"
+			cascade="all-delete-orphan">
+			<key column="`bracketId`" update="false"/>
+			<one-to-many class="de.delmak.fussballtipp.persistence.BracketTeam"/>
+		</set>
+	</class>
+	
+	<query name="getBracketById">
+		<![CDATA[
+			from Bracket t1
+			where t1.bracketId = :id
+		]]>
+	</query>
+	
+	<query name="getBracketByName">
+		<![CDATA[
+			from Bracket t1
+			where t1.bracketname = :name
+		]]>
+	</query>
+	
+	<query name="getBracketsAll">
+		<![CDATA[
+			from Bracket t1
+		]]>
+	</query>
+
+	<query name="getBracketsByPhaseId">
+		<![CDATA[
+			from Bracket t1
+			inner join fetch t1.phase
+			where t1.phase.phaseId = :phaseId
+		]]>
+	</query>
+</hibernate-mapping>

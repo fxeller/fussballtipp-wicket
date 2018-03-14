@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+	<head>
+		<title>XMans Fussballtipp</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet" />
+	</head>
+	<body>
+		<wicket:extend>
+			<div wicket:id="pnlData">
+				<a href="#" wicket:id="lnkBackToMaster">Zurück</a>
+				<p>
+				<table>
+					<thead>
+						<th>Gruppenname</th>
+						<th>Beschreibung</th>
+						<th><a href="#" wicket:id="lnkInsertData"><img src="insert.png"/></a></th>
+					</thead>
+					<tr wicket:id="rptData">
+						<td wicket:id="fldBracketname">[Bracket.groupname]</td>
+						<td wicket:id="fldDescription">[Bracket.description]</td>
+						<td>
+							<a href="#" wicket:id="lnkModifyData"><img src="modify.png"/></a>
+							<a href="#" wicket:id="lnkDeleteData"><img src="delete.png"/></a>
+							<a href="#" wicket:id="lnkBracketTeams"><img src="drilldown.png"/></a>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<form wicket:id="frmData">
+				<fieldset>
+					<legend><span wicket:id="lblDataformHeader">[DataformHeader]</span></legend>
+					<div>
+						<label for="txtBracketname">Gruppenname: </label>
+						<input type="text" wicket:id="txtBracketname"/>
+					</div>
+					<div>
+						<label for="txtDescription">Beschreibung: </label>
+						<input type="text" wicket:id="txtDescription"/>
+					</div>
+					<div>
+						<label></label>
+						<input type="submit" value="Bestätigen"/>
+					</div>
+				</fieldset>
+			</form>
+			<div wicket:id="pnlFeedback">[Feedback]</div>
+		</wicket:extend>
+	</body>
+</html>

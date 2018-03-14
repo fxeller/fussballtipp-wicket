@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class 
+		name="de.delmak.fussballtipp.persistence.Phase"
+		table="`Phase`">
+		
+		<id 
+			name="phaseId" 
+			column="`phaseId`" 
+			type="integer">
+			<generator class="sequence">
+				<param name="sequence">`Phase_phaseId_seq`</param>
+			</generator>
+		</id>
+
+		<property 
+			name="phasename" 
+			column="`phasename`" 
+			type="string">
+		</property>
+
+		<property 
+			name="description" 
+			column="`description`" 
+			type="string">
+		</property>
+
+		<property 
+			name="datefrom" 
+			column="`datefrom`" 
+			type="timestamp">
+		</property>
+		
+		<property
+			name="isgroupphase"
+			column="`isgroupphase`"
+			type="boolean">
+		</property>
+
+		<set
+			name="brackets"
+			cascade="all-delete-orphan">
+			<key column="`phaseId`" update="false"/>
+			<one-to-many class="de.delmak.fussballtipp.persistence.Bracket"/>
+		</set>		
+
+		<set
+			name="matches"
+			cascade="all-delete-orphan">
+			<key column="`phaseId`" update="false"/>
+			<one-to-many class="de.delmak.fussballtipp.persistence.Match"/>
+		</set>		
+	</class>
+	
+	<query name="getPhaseById">
+		<![CDATA[
+			from Phase t1
+			where t1.phaseId = :id
+		]]>
+	</query>
+
+	<query name="getPhaseByName">
+		<![CDATA[
+			from Phase t1
+			where t1.phasename = :name
+		]]>
+	</query>
+
+	<query name="getPhasesAll">
+		<![CDATA[
+			from Phase t1 
+			order by t1.datefrom
+		]]>
+	</query>
+
+	<query name="getMinDatetimeByPhaseId">
+		<![CDATA[
+			select min(t1.datetime)
+			from Match t1
+			where t1.phase.phaseId = :phaseId
+		]]>
+	</query>	
+</hibernate-mapping>

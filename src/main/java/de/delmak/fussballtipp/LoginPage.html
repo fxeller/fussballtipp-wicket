@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+	<head>
+		<title>XMans Fussballtipp</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet" />
+	</head>
+	<body>
+		<wicket:extend>
+			<form wicket:id="frmLogin">
+				<fieldset>
+					<legend>Login</legend>
+					<div>
+						<label for="txtUsername">Username:</label>
+						<input type="text" wicket:id="txtUsername"/>
+					</div>
+					<div>
+						<label for="txtPassword">Password:</label>
+						<input type="password" wicket:id="txtPassword"/>
+					</div>
+					<div>
+						<label></label>
+						<input type="submit" value="Login"/>
+					</div>
+				</fieldset>
+			</form>
+			<div wicket:id="pnlFeedback">[Feedback]</div>
+		</wicket:extend>
+	</body>
+</html>

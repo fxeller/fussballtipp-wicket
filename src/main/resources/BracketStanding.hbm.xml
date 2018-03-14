@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class 
+		name="de.delmak.fussballtipp.persistence.BracketStanding"
+		table="`BracketStanding`">
+		
+		<composite-id>
+			<key-property name="bracketId" column="`bracketId`"/>
+			<key-property name="teamId" column="`teamId`"/>
+		</composite-id>
+
+		<property 
+			name="rank" 
+			column="`rank`" 
+			type="integer">
+		</property>
+		
+		<property 
+			name="bracketId" 
+			column="`bracketId`" 
+			type="integer"
+			insert="false"
+			update="false">
+		</property>
+		
+		<property 
+			name="bracketDescription" 
+			column="`bracketDescription`" 
+			type="string">
+		</property>
+
+		<property 
+			name="teamId" 
+			column="`teamId`" 
+			type="integer"
+			insert="false"
+			update="false">
+		</property>
+		
+		<property 
+			name="teamDescription" 
+			column="`teamDescription`" 
+			type="string">
+		</property>
+
+		<property 
+			name="matchesplayed" 
+			column="`matchesplayed`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="scorediff" 
+			column="`scorediff`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="goalsshot" 
+			column="`goalsshot`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="goalstaken" 
+			column="`goalstaken`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="points" 
+			column="`points`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="wins" 
+			column="`wins`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="draws" 
+			column="`draws`" 
+			type="integer">
+		</property>
+
+		<property 
+			name="losses" 
+			column="`losses`" 
+			type="integer">
+		</property>
+	</class>
+
+	<query name="getBracketStandingsByBracketId">
+		<![CDATA[
+			from BracketStanding t1
+			where t1.bracketId = :bracketId
+			order by t1.rank desc, t1.teamId
+		]]>
+	</query>
+</hibernate-mapping>
