@@ -20,6 +20,8 @@ public class HibernateUtil
 	{
 		try
 		{
+                        System.out.println("Bin da.");
+                        
 			Configuration configuration = new Configuration();
 			configuration.configure();
                         
@@ -29,6 +31,8 @@ public class HibernateUtil
                         {
                             configuration.setProperty("hibernate.connection.url", connectionUrl);
                         }
+                        
+                        Class.forName("org.postgresql.Driver"); 
                         
 			serviceRegistry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties()).build();  
 			sessionFactory = configuration.buildSessionFactory(serviceRegistry);

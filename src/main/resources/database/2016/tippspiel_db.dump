@@ -1,0 +1,4156 @@
+--
+-- PostgreSQL database dump
+--
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+
+--
+-- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
+--
+
+CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
+
+
+SET search_path = public, pg_catalog;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: Bet; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "Bet" (
+    "betId" integer NOT NULL,
+    "userId" integer NOT NULL,
+    betkind character varying(20) NOT NULL,
+    "matchId" integer,
+    "scoreHome" integer,
+    "scoreGuest" integer,
+    "teamId" integer,
+    "bracketId" integer
+);
+
+
+ALTER TABLE "Bet" OWNER TO tippspiel;
+
+--
+-- Name: Bet_betId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "Bet_betId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "Bet_betId_seq" OWNER TO tippspiel;
+
+--
+-- Name: Bet_betId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "Bet_betId_seq" OWNED BY "Bet"."betId";
+
+
+--
+-- Name: Betgroup; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "Betgroup" (
+    "betgroupId" integer NOT NULL,
+    betgroupname character varying(20) NOT NULL,
+    description character varying(50) DEFAULT NULL::character varying
+);
+
+
+ALTER TABLE "Betgroup" OWNER TO tippspiel;
+
+--
+-- Name: Betgroup_betgroupId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "Betgroup_betgroupId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "Betgroup_betgroupId_seq" OWNER TO tippspiel;
+
+--
+-- Name: Betgroup_betgroupId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "Betgroup_betgroupId_seq" OWNED BY "Betgroup"."betgroupId";
+
+
+--
+-- Name: Bracket; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "Bracket" (
+    "bracketId" integer NOT NULL,
+    bracketname character varying(20) NOT NULL,
+    description character varying(50) DEFAULT NULL::character varying,
+    "phaseId" integer NOT NULL
+);
+
+
+ALTER TABLE "Bracket" OWNER TO tippspiel;
+
+--
+-- Name: BracketTeam; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "BracketTeam" (
+    "bracketTeamId" integer NOT NULL,
+    "bracketId" integer NOT NULL,
+    "teamId" integer NOT NULL
+);
+
+
+ALTER TABLE "BracketTeam" OWNER TO tippspiel;
+
+--
+-- Name: SoccerMatch; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "SoccerMatch" (
+    "matchId" integer NOT NULL,
+    "phaseId" integer NOT NULL,
+    datetime timestamp without time zone NOT NULL,
+    "teamIdHome" integer NOT NULL,
+    "teamIdGuest" integer NOT NULL,
+    "scoreHome" integer,
+    "scoreGuest" integer,
+    isfinals boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE "SoccerMatch" OWNER TO tippspiel;
+
+--
+-- Name: Team; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "Team" (
+    "teamId" integer NOT NULL,
+    teamname character varying(20) NOT NULL,
+    description character varying(50) DEFAULT NULL::character varying
+);
+
+
+ALTER TABLE "Team" OWNER TO tippspiel;
+
+--
+-- Name: BracketStanding_Sub1; Type: VIEW; Schema: public; Owner: tippspiel
+--
+
+CREATE VIEW "BracketStanding_Sub1" AS
+ SELECT t1."bracketId",
+    t1.description AS "bracketDescription",
+    t3."teamId",
+    t3.description AS "teamDescription",
+        CASE
+            WHEN ((t4."scoreHome" IS NULL) OR (t4."scoreGuest" IS NULL)) THEN 0
+            ELSE 1
+        END AS matchdone,
+        CASE
+            WHEN ((t4."scoreHome" IS NOT NULL) AND (t4."scoreGuest" IS NOT NULL)) THEN
+            CASE
+                WHEN (t3."teamId" = t4."teamIdHome") THEN (t4."scoreHome" - t4."scoreGuest")
+                ELSE (t4."scoreGuest" - t4."scoreHome")
+            END
+            ELSE 0
+        END AS scorediff,
+        CASE
+            WHEN ((t4."scoreHome" IS NOT NULL) AND (t4."scoreGuest" IS NOT NULL)) THEN
+            CASE
+                WHEN (t3."teamId" = t4."teamIdHome") THEN t4."scoreHome"
+                ELSE t4."scoreGuest"
+            END
+            ELSE 0
+        END AS goalsshot,
+        CASE
+            WHEN ((t4."scoreHome" IS NOT NULL) AND (t4."scoreGuest" IS NOT NULL)) THEN
+            CASE
+                WHEN (t3."teamId" = t4."teamIdHome") THEN t4."scoreGuest"
+                ELSE t4."scoreHome"
+            END
+            ELSE 0
+        END AS goalstaken
+   FROM ((("Bracket" t1
+     JOIN "BracketTeam" t2 ON ((t1."bracketId" = t2."bracketId")))
+     JOIN "Team" t3 ON ((t2."teamId" = t3."teamId")))
+     JOIN "SoccerMatch" t4 ON ((((t3."teamId" = t4."teamIdHome") OR (t3."teamId" = t4."teamIdGuest")) AND (t1."phaseId" = t4."phaseId"))));
+
+
+ALTER TABLE "BracketStanding_Sub1" OWNER TO tippspiel;
+
+--
+-- Name: BracketStanding_Sub2; Type: VIEW; Schema: public; Owner: tippspiel
+--
+
+CREATE VIEW "BracketStanding_Sub2" AS
+ SELECT t1."bracketId",
+    t1."bracketDescription",
+    t1."teamId",
+    t1."teamDescription",
+    t1.matchdone,
+    t1.scorediff,
+    t1.goalsshot,
+    t1.goalstaken,
+        CASE
+            WHEN ((t1.matchdone = 1) AND (t1.scorediff > 0)) THEN 3
+            WHEN ((t1.matchdone = 1) AND (t1.scorediff = 0)) THEN 1
+            WHEN ((t1.matchdone = 1) AND (t1.scorediff < 0)) THEN 0
+            ELSE 0
+        END AS points,
+        CASE
+            WHEN ((t1.matchdone = 1) AND (t1.scorediff > 0)) THEN 1
+            ELSE 0
+        END AS win,
+        CASE
+            WHEN ((t1.matchdone = 1) AND (t1.scorediff = 0)) THEN 1
+            ELSE 0
+        END AS draw,
+        CASE
+            WHEN ((t1.matchdone = 1) AND (t1.scorediff < 0)) THEN 1
+            ELSE 0
+        END AS loss
+   FROM "BracketStanding_Sub1" t1;
+
+
+ALTER TABLE "BracketStanding_Sub2" OWNER TO tippspiel;
+
+--
+-- Name: BracketStanding; Type: VIEW; Schema: public; Owner: tippspiel
+--
+
+CREATE VIEW "BracketStanding" AS
+ SELECT ((((sum(t1.points) * 10000) + ((sum(t1.scorediff) + 50) * 100)) + sum(t1.goalsshot)) +
+        CASE
+            WHEN ((t1."teamDescription")::text = 'Italien'::text) THEN 2
+            ELSE 0
+        END) AS rank,
+    t1."bracketId",
+    t1."bracketDescription",
+    t1."teamId",
+    t1."teamDescription",
+    sum(t1.matchdone) AS matchesplayed,
+    sum(t1.scorediff) AS scorediff,
+    sum(t1.goalsshot) AS goalsshot,
+    sum(t1.goalstaken) AS goalstaken,
+    sum(t1.points) AS points,
+    sum(t1.win) AS wins,
+    sum(t1.draw) AS draws,
+    sum(t1.loss) AS losses
+   FROM "BracketStanding_Sub2" t1
+  GROUP BY t1."bracketId", t1."bracketDescription", t1."teamId", t1."teamDescription";
+
+
+ALTER TABLE "BracketStanding" OWNER TO tippspiel;
+
+--
+-- Name: BracketMaxRank; Type: VIEW; Schema: public; Owner: tippspiel
+--
+
+CREATE VIEW "BracketMaxRank" AS
+ SELECT "BracketStanding"."bracketId",
+    max("BracketStanding".rank) AS maxrank
+   FROM "BracketStanding"
+  GROUP BY "BracketStanding"."bracketId";
+
+
+ALTER TABLE "BracketMaxRank" OWNER TO tippspiel;
+
+--
+-- Name: BracketMinDatetime; Type: VIEW; Schema: public; Owner: tippspiel
+--
+
+CREATE VIEW "BracketMinDatetime" AS
+ SELECT t1."bracketId",
+    min(t2.datetime) AS datetime
+   FROM ("BracketTeam" t1
+     JOIN "SoccerMatch" t2 ON (((t1."teamId" = t2."teamIdHome") OR (t1."teamId" = t2."teamIdGuest"))))
+  GROUP BY t1."bracketId";
+
+
+ALTER TABLE "BracketMinDatetime" OWNER TO tippspiel;
+
+--
+-- Name: BracketTeam_bracketTeamId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "BracketTeam_bracketTeamId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "BracketTeam_bracketTeamId_seq" OWNER TO tippspiel;
+
+--
+-- Name: BracketTeam_bracketTeamId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "BracketTeam_bracketTeamId_seq" OWNED BY "BracketTeam"."bracketTeamId";
+
+
+--
+-- Name: BracketWinner; Type: VIEW; Schema: public; Owner: tippspiel
+--
+
+CREATE VIEW "BracketWinner" AS
+ SELECT t1."bracketId",
+    min(t1."teamId") AS "teamId"
+   FROM ("BracketStanding" t1
+     JOIN "BracketMaxRank" t2 ON (((t1."bracketId" = t2."bracketId") AND (t1.rank = t2.maxrank))))
+  WHERE (t1.matchesplayed = 3)
+  GROUP BY t1."bracketId";
+
+
+ALTER TABLE "BracketWinner" OWNER TO tippspiel;
+
+--
+-- Name: Bracket_bracketId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "Bracket_bracketId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "Bracket_bracketId_seq" OWNER TO tippspiel;
+
+--
+-- Name: Bracket_bracketId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "Bracket_bracketId_seq" OWNED BY "Bracket"."bracketId";
+
+
+--
+-- Name: Phase; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "Phase" (
+    "phaseId" integer NOT NULL,
+    phasename character varying(20) NOT NULL,
+    description character varying(50) DEFAULT NULL::character varying,
+    datefrom timestamp without time zone NOT NULL,
+    isgroupphase boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE "Phase" OWNER TO tippspiel;
+
+--
+-- Name: Phase_phaseId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "Phase_phaseId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "Phase_phaseId_seq" OWNER TO tippspiel;
+
+--
+-- Name: Phase_phaseId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "Phase_phaseId_seq" OWNED BY "Phase"."phaseId";
+
+
+--
+-- Name: Role; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "Role" (
+    "roleId" integer NOT NULL,
+    rolename character varying(20) NOT NULL,
+    description character varying(50) DEFAULT NULL::character varying
+);
+
+
+ALTER TABLE "Role" OWNER TO tippspiel;
+
+--
+-- Name: Role_roleId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "Role_roleId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "Role_roleId_seq" OWNER TO tippspiel;
+
+--
+-- Name: Role_roleId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "Role_roleId_seq" OWNED BY "Role"."roleId";
+
+
+--
+-- Name: SoccerMatchBetWithTendency; Type: VIEW; Schema: public; Owner: tippspiel
+--
+
+CREATE VIEW "SoccerMatchBetWithTendency" AS
+ SELECT "Bet"."betId",
+    "Bet"."userId",
+    "Bet"."matchId",
+    "Bet"."scoreHome",
+    "Bet"."scoreGuest",
+        CASE
+            WHEN ("Bet"."scoreHome" > "Bet"."scoreGuest") THEN 1
+            WHEN ("Bet"."scoreHome" < "Bet"."scoreGuest") THEN 2
+            ELSE 3
+        END AS tendency
+   FROM "Bet"
+  WHERE (("Bet".betkind)::text = 'MATCH'::text);
+
+
+ALTER TABLE "SoccerMatchBetWithTendency" OWNER TO tippspiel;
+
+--
+-- Name: SoccerMatchWithTendency; Type: VIEW; Schema: public; Owner: tippspiel
+--
+
+CREATE VIEW "SoccerMatchWithTendency" AS
+ SELECT "SoccerMatch"."matchId",
+    "SoccerMatch"."scoreHome",
+    "SoccerMatch"."scoreGuest",
+        CASE
+            WHEN (("SoccerMatch"."scoreHome" IS NULL) OR ("SoccerMatch"."scoreGuest" IS NULL)) THEN 0
+            WHEN ("SoccerMatch"."scoreHome" > "SoccerMatch"."scoreGuest") THEN 1
+            WHEN ("SoccerMatch"."scoreHome" < "SoccerMatch"."scoreGuest") THEN 2
+            ELSE 3
+        END AS tendency
+   FROM "SoccerMatch";
+
+
+ALTER TABLE "SoccerMatchWithTendency" OWNER TO tippspiel;
+
+--
+-- Name: SoccerMatch_matchId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "SoccerMatch_matchId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "SoccerMatch_matchId_seq" OWNER TO tippspiel;
+
+--
+-- Name: SoccerMatch_matchId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "SoccerMatch_matchId_seq" OWNED BY "SoccerMatch"."matchId";
+
+
+--
+-- Name: Team_teamId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "Team_teamId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "Team_teamId_seq" OWNER TO tippspiel;
+
+--
+-- Name: Team_teamId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "Team_teamId_seq" OWNED BY "Team"."teamId";
+
+
+--
+-- Name: TourneyWinner; Type: VIEW; Schema: public; Owner: tippspiel
+--
+
+CREATE VIEW "TourneyWinner" AS
+ SELECT
+        CASE
+            WHEN (t1.tendency = 1) THEN t2."teamIdHome"
+            WHEN (t1.tendency = 2) THEN t2."teamIdGuest"
+            ELSE NULL::integer
+        END AS "teamId"
+   FROM ("SoccerMatchWithTendency" t1
+     JOIN "SoccerMatch" t2 ON (((t1."matchId" = t2."matchId") AND (t2.isfinals = true))));
+
+
+ALTER TABLE "TourneyWinner" OWNER TO tippspiel;
+
+--
+-- Name: User; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "User" (
+    "userId" integer NOT NULL,
+    username character varying(20) NOT NULL,
+    password character varying(50) DEFAULT NULL::character varying,
+    lastname character varying(50) DEFAULT NULL::character varying,
+    firstname character varying(50) DEFAULT NULL::character varying,
+    email character varying(100) DEFAULT NULL::character varying,
+    passwordinit character varying(50)
+);
+
+
+ALTER TABLE "User" OWNER TO tippspiel;
+
+--
+-- Name: UserBetScore; Type: VIEW; Schema: public; Owner: tippspiel
+--
+
+CREATE VIEW "UserBetScore" AS
+ SELECT t1."userId",
+    t2."betId",
+        CASE
+            WHEN (t2.tendency = t3.tendency) THEN
+            CASE
+                WHEN ((t2."scoreHome" <> t3."scoreHome") AND (t2."scoreGuest" <> t3."scoreGuest")) THEN 1
+                WHEN ((t2."scoreHome" <> t3."scoreHome") OR (t2."scoreGuest" <> t3."scoreGuest")) THEN 2
+                ELSE 3
+            END
+            ELSE 0
+        END AS score
+   FROM (("User" t1
+     JOIN "SoccerMatchBetWithTendency" t2 ON ((t1."userId" = t2."userId")))
+     JOIN "SoccerMatchWithTendency" t3 ON ((t2."matchId" = t3."matchId")))
+UNION ALL
+ SELECT t1."userId",
+    t2."betId",
+        CASE
+            WHEN (t2."teamId" = t3."teamId") THEN 3
+            ELSE 0
+        END AS score
+   FROM (("User" t1
+     JOIN "Bet" t2 ON (((t1."userId" = t2."userId") AND ((t2.betkind)::text = 'BRACKETWINNER'::text))))
+     JOIN "BracketWinner" t3 ON ((t2."bracketId" = t3."bracketId")))
+UNION ALL
+ SELECT t1."userId",
+    t2."betId",
+        CASE
+            WHEN (t2."teamId" = t3."teamId") THEN 5
+            ELSE 0
+        END AS score
+   FROM (("User" t1
+     JOIN "Bet" t2 ON (((t1."userId" = t2."userId") AND ((t2.betkind)::text = 'CHAMPION'::text))))
+     JOIN "TourneyWinner" t3 ON ((1 = 1)))
+UNION ALL
+ SELECT t1."userId",
+    0 AS "betId",
+    0 AS score
+   FROM "User" t1;
+
+
+ALTER TABLE "UserBetScore" OWNER TO tippspiel;
+
+--
+-- Name: UserBetgroup; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "UserBetgroup" (
+    "userBetgroupId" integer NOT NULL,
+    "userId" integer NOT NULL,
+    "betgroupId" integer NOT NULL
+);
+
+
+ALTER TABLE "UserBetgroup" OWNER TO tippspiel;
+
+--
+-- Name: UserBetScoreAggr; Type: VIEW; Schema: public; Owner: tippspiel
+--
+
+CREATE VIEW "UserBetScoreAggr" AS
+ SELECT tmp2."userId",
+    tmp2.score,
+    tmp2.rank,
+        CASE
+            WHEN (tmp2.rank = 1) THEN 4
+            WHEN (tmp2.rank = 2) THEN 2
+            WHEN (tmp2.rank = 3) THEN 1
+            ELSE 0
+        END AS winparts,
+    tmp2."betgroupId"
+   FROM ( SELECT tmp1."userId",
+            tmp1.score,
+            dense_rank() OVER (PARTITION BY tmp1."betgroupId" ORDER BY tmp1.score DESC) AS rank,
+            tmp1."betgroupId"
+           FROM ( SELECT t1."userId",
+                    t2."betgroupId",
+                    sum(t1.score) AS score
+                   FROM ("UserBetScore" t1
+                     JOIN "UserBetgroup" t2 ON ((t1."userId" = t2."userId")))
+                  GROUP BY t1."userId", t2."betgroupId") tmp1) tmp2;
+
+
+ALTER TABLE "UserBetScoreAggr" OWNER TO tippspiel;
+
+--
+-- Name: UserBetgroup_userBetgroupId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "UserBetgroup_userBetgroupId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "UserBetgroup_userBetgroupId_seq" OWNER TO tippspiel;
+
+--
+-- Name: UserBetgroup_userBetgroupId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "UserBetgroup_userBetgroupId_seq" OWNED BY "UserBetgroup"."userBetgroupId";
+
+
+--
+-- Name: UserPost; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "UserPost" (
+    "userPostId" integer NOT NULL,
+    "userId" integer NOT NULL,
+    "betgroupId" integer NOT NULL,
+    post text,
+    createdate timestamp without time zone NOT NULL
+);
+
+
+ALTER TABLE "UserPost" OWNER TO tippspiel;
+
+--
+-- Name: UserPost_userPostId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "UserPost_userPostId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "UserPost_userPostId_seq" OWNER TO tippspiel;
+
+--
+-- Name: UserPost_userPostId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "UserPost_userPostId_seq" OWNED BY "UserPost"."userPostId";
+
+
+--
+-- Name: UserRole; Type: TABLE; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE TABLE "UserRole" (
+    "userRoleId" integer NOT NULL,
+    "userId" integer NOT NULL,
+    "roleId" integer NOT NULL
+);
+
+
+ALTER TABLE "UserRole" OWNER TO tippspiel;
+
+--
+-- Name: UserRole_userRoleId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "UserRole_userRoleId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "UserRole_userRoleId_seq" OWNER TO tippspiel;
+
+--
+-- Name: UserRole_userRoleId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "UserRole_userRoleId_seq" OWNED BY "UserRole"."userRoleId";
+
+
+--
+-- Name: User_userId_seq; Type: SEQUENCE; Schema: public; Owner: tippspiel
+--
+
+CREATE SEQUENCE "User_userId_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE "User_userId_seq" OWNER TO tippspiel;
+
+--
+-- Name: User_userId_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: tippspiel
+--
+
+ALTER SEQUENCE "User_userId_seq" OWNED BY "User"."userId";
+
+
+--
+-- Name: betId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "Bet" ALTER COLUMN "betId" SET DEFAULT nextval('"Bet_betId_seq"'::regclass);
+
+
+--
+-- Name: betgroupId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "Betgroup" ALTER COLUMN "betgroupId" SET DEFAULT nextval('"Betgroup_betgroupId_seq"'::regclass);
+
+
+--
+-- Name: bracketId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "Bracket" ALTER COLUMN "bracketId" SET DEFAULT nextval('"Bracket_bracketId_seq"'::regclass);
+
+
+--
+-- Name: bracketTeamId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "BracketTeam" ALTER COLUMN "bracketTeamId" SET DEFAULT nextval('"BracketTeam_bracketTeamId_seq"'::regclass);
+
+
+--
+-- Name: phaseId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "Phase" ALTER COLUMN "phaseId" SET DEFAULT nextval('"Phase_phaseId_seq"'::regclass);
+
+
+--
+-- Name: roleId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "Role" ALTER COLUMN "roleId" SET DEFAULT nextval('"Role_roleId_seq"'::regclass);
+
+
+--
+-- Name: matchId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "SoccerMatch" ALTER COLUMN "matchId" SET DEFAULT nextval('"SoccerMatch_matchId_seq"'::regclass);
+
+
+--
+-- Name: teamId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "Team" ALTER COLUMN "teamId" SET DEFAULT nextval('"Team_teamId_seq"'::regclass);
+
+
+--
+-- Name: userId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "User" ALTER COLUMN "userId" SET DEFAULT nextval('"User_userId_seq"'::regclass);
+
+
+--
+-- Name: userBetgroupId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "UserBetgroup" ALTER COLUMN "userBetgroupId" SET DEFAULT nextval('"UserBetgroup_userBetgroupId_seq"'::regclass);
+
+
+--
+-- Name: userPostId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "UserPost" ALTER COLUMN "userPostId" SET DEFAULT nextval('"UserPost_userPostId_seq"'::regclass);
+
+
+--
+-- Name: userRoleId; Type: DEFAULT; Schema: public; Owner: tippspiel
+--
+
+ALTER TABLE ONLY "UserRole" ALTER COLUMN "userRoleId" SET DEFAULT nextval('"UserRole_userRoleId_seq"'::regclass);
+
+
+--
+-- Data for Name: Bet; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "Bet" ("betId", "userId", betkind, "matchId", "scoreHome", "scoreGuest", "teamId", "bracketId") FROM stdin;
+4	57	BRACKETWINNER	\N	\N	\N	5	1
+5	57	BRACKETWINNER	\N	\N	\N	4	2
+6	57	BRACKETWINNER	\N	\N	\N	3	3
+7	57	BRACKETWINNER	\N	\N	\N	19	4
+8	57	BRACKETWINNER	\N	\N	\N	2	5
+9	57	BRACKETWINNER	\N	\N	\N	11	6
+11	52	MATCH	4	3	0	\N	\N
+12	46	MATCH	4	3	1	\N	\N
+13	46	BRACKETWINNER	\N	\N	\N	5	1
+14	46	BRACKETWINNER	\N	\N	\N	4	2
+15	46	BRACKETWINNER	\N	\N	\N	3	3
+16	46	BRACKETWINNER	\N	\N	\N	19	4
+17	46	BRACKETWINNER	\N	\N	\N	8	5
+18	46	BRACKETWINNER	\N	\N	\N	13	6
+22	46	MATCH	22	3	1	\N	\N
+23	46	MATCH	16	3	2	\N	\N
+26	46	MATCH	28	1	3	\N	\N
+27	46	MATCH	29	2	3	\N	\N
+29	46	MATCH	35	1	1	\N	\N
+31	46	MATCH	12	1	1	\N	\N
+32	46	MATCH	6	2	2	\N	\N
+35	46	MATCH	18	1	2	\N	\N
+36	46	MATCH	19	2	1	\N	\N
+40	46	MATCH	31	1	1	\N	\N
+41	46	MATCH	36	2	2	\N	\N
+127	48	MATCH	15	0	2	\N	\N
+43	46	MATCH	8	1	3	\N	\N
+44	46	MATCH	9	1	0	\N	\N
+45	46	MATCH	14	0	2	\N	\N
+47	46	MATCH	20	3	3	\N	\N
+50	46	MATCH	27	2	2	\N	\N
+52	46	MATCH	32	2	1	\N	\N
+54	58	MATCH	4	2	1	\N	\N
+55	58	MATCH	5	0	2	\N	\N
+56	58	MATCH	10	1	0	\N	\N
+58	58	MATCH	11	2	2	\N	\N
+59	58	MATCH	22	1	1	\N	\N
+60	58	MATCH	16	3	0	\N	\N
+61	58	MATCH	17	2	1	\N	\N
+62	58	BRACKETWINNER	\N	\N	\N	5	1
+63	58	BRACKETWINNER	\N	\N	\N	15	2
+64	58	BRACKETWINNER	\N	\N	\N	12	3
+65	58	BRACKETWINNER	\N	\N	\N	19	4
+66	58	BRACKETWINNER	\N	\N	\N	2	5
+67	58	BRACKETWINNER	\N	\N	\N	11	6
+68	56	MATCH	4	2	1	\N	\N
+69	56	MATCH	5	0	2	\N	\N
+70	56	MATCH	10	2	2	\N	\N
+71	56	MATCH	11	2	1	\N	\N
+72	56	MATCH	22	2	2	\N	\N
+73	56	MATCH	16	2	0	\N	\N
+74	56	MATCH	17	2	0	\N	\N
+75	56	MATCH	23	3	1	\N	\N
+77	56	MATCH	29	1	3	\N	\N
+78	56	MATCH	34	2	1	\N	\N
+82	56	MATCH	6	0	2	\N	\N
+83	56	MATCH	7	4	0	\N	\N
+84	56	MATCH	13	1	0	\N	\N
+86	40	MATCH	4	3	1	\N	\N
+87	12	BRACKETWINNER	\N	\N	\N	5	1
+88	12	BRACKETWINNER	\N	\N	\N	4	2
+89	12	BRACKETWINNER	\N	\N	\N	3	3
+90	12	BRACKETWINNER	\N	\N	\N	19	4
+91	12	BRACKETWINNER	\N	\N	\N	2	5
+92	12	BRACKETWINNER	\N	\N	\N	11	6
+93	12	CHAMPION	\N	\N	\N	3	\N
+94	34	CHAMPION	\N	\N	\N	3	\N
+98	34	BRACKETWINNER	\N	\N	\N	3	3
+95	34	BRACKETWINNER	\N	\N	\N	11	6
+96	34	BRACKETWINNER	\N	\N	\N	8	5
+97	34	BRACKETWINNER	\N	\N	\N	19	4
+99	34	BRACKETWINNER	\N	\N	\N	4	2
+100	34	BRACKETWINNER	\N	\N	\N	5	1
+101	48	MATCH	4	2	1	\N	\N
+102	48	MATCH	5	0	1	\N	\N
+103	48	MATCH	10	0	2	\N	\N
+104	48	MATCH	11	2	1	\N	\N
+105	48	MATCH	22	2	0	\N	\N
+106	48	MATCH	16	3	0	\N	\N
+107	48	MATCH	17	2	0	\N	\N
+108	48	MATCH	23	2	1	\N	\N
+109	48	MATCH	28	1	1	\N	\N
+110	48	MATCH	29	1	2	\N	\N
+111	48	MATCH	34	1	0	\N	\N
+114	48	MATCH	6	0	1	\N	\N
+115	48	MATCH	7	3	1	\N	\N
+116	48	MATCH	13	3	0	\N	\N
+117	48	MATCH	18	1	0	\N	\N
+119	48	MATCH	30	2	1	\N	\N
+120	48	MATCH	24	3	1	\N	\N
+121	48	MATCH	25	2	1	\N	\N
+122	48	MATCH	31	2	0	\N	\N
+123	48	MATCH	36	2	0	\N	\N
+124	48	MATCH	37	1	1	\N	\N
+125	48	MATCH	8	0	3	\N	\N
+126	48	MATCH	9	1	1	\N	\N
+128	48	MATCH	14	1	2	\N	\N
+129	48	MATCH	20	0	2	\N	\N
+130	48	MATCH	21	0	3	\N	\N
+131	48	MATCH	27	2	2	\N	\N
+132	48	MATCH	26	0	2	\N	\N
+133	48	MATCH	39	1	1	\N	\N
+137	48	CHAMPION	\N	\N	\N	3	\N
+138	48	BRACKETWINNER	\N	\N	\N	5	1
+28	46	MATCH	34	1	0	\N	\N
+20	46	MATCH	10	0	1	\N	\N
+21	46	MATCH	11	3	2	\N	\N
+80	56	MATCH	12	2	1	\N	\N
+24	46	MATCH	17	3	1	\N	\N
+76	56	MATCH	28	1	2	\N	\N
+134	48	MATCH	38	2	1	\N	\N
+25	46	MATCH	23	2	1	\N	\N
+113	48	MATCH	12	2	1	\N	\N
+112	48	MATCH	35	2	0	\N	\N
+79	56	MATCH	35	2	1	\N	\N
+49	46	MATCH	26	0	2	\N	\N
+37	46	MATCH	30	2	1	\N	\N
+38	46	MATCH	24	1	2	\N	\N
+42	46	MATCH	37	2	0	\N	\N
+39	46	MATCH	25	3	1	\N	\N
+46	46	MATCH	15	1	2	\N	\N
+48	46	MATCH	21	0	2	\N	\N
+51	46	MATCH	39	2	1	\N	\N
+136	48	MATCH	33	1	2	\N	\N
+34	46	MATCH	13	1	2	\N	\N
+118	48	MATCH	19	2	1	\N	\N
+85	56	MATCH	18	1	2	\N	\N
+10	57	CHAMPION	\N	\N	\N	3	\N
+30	46	MATCH	38	2	1	\N	\N
+53	46	MATCH	33	0	2	\N	\N
+135	48	MATCH	32	3	0	\N	\N
+139	48	BRACKETWINNER	\N	\N	\N	4	2
+140	48	BRACKETWINNER	\N	\N	\N	3	3
+142	48	BRACKETWINNER	\N	\N	\N	8	5
+143	48	BRACKETWINNER	\N	\N	\N	23	6
+141	48	BRACKETWINNER	\N	\N	\N	19	4
+144	61	CHAMPION	\N	\N	\N	3	\N
+145	61	MATCH	4	3	1	\N	\N
+146	61	MATCH	5	0	1	\N	\N
+147	61	MATCH	10	1	1	\N	\N
+148	61	MATCH	11	2	1	\N	\N
+149	61	BRACKETWINNER	\N	\N	\N	5	1
+150	61	BRACKETWINNER	\N	\N	\N	4	2
+151	61	BRACKETWINNER	\N	\N	\N	3	3
+152	61	BRACKETWINNER	\N	\N	\N	19	4
+153	61	BRACKETWINNER	\N	\N	\N	8	5
+154	61	BRACKETWINNER	\N	\N	\N	13	6
+155	44	BRACKETWINNER	\N	\N	\N	5	1
+156	44	BRACKETWINNER	\N	\N	\N	4	2
+157	44	BRACKETWINNER	\N	\N	\N	3	3
+158	44	BRACKETWINNER	\N	\N	\N	19	4
+160	44	BRACKETWINNER	\N	\N	\N	13	6
+161	44	CHAMPION	\N	\N	\N	3	\N
+171	53	MATCH	29	1	2	\N	\N
+181	53	MATCH	24	2	2	\N	\N
+187	53	MATCH	9	2	1	\N	\N
+188	53	MATCH	15	2	0	\N	\N
+194	53	MATCH	39	2	1	\N	\N
+196	53	MATCH	32	2	0	\N	\N
+197	53	MATCH	33	1	3	\N	\N
+206	32	MATCH	28	2	0	\N	\N
+208	32	MATCH	34	1	1	\N	\N
+214	32	MATCH	18	0	1	\N	\N
+216	32	MATCH	30	2	0	\N	\N
+217	32	MATCH	24	0	2	\N	\N
+218	32	MATCH	25	2	0	\N	\N
+232	32	MATCH	33	1	2	\N	\N
+235	32	MATCH	41	1	0	\N	\N
+249	38	MATCH	4	2	0	\N	\N
+250	38	MATCH	5	1	2	\N	\N
+251	38	MATCH	10	1	0	\N	\N
+252	38	MATCH	11	3	1	\N	\N
+253	38	MATCH	22	0	1	\N	\N
+254	38	MATCH	16	2	0	\N	\N
+255	38	MATCH	17	2	0	\N	\N
+256	38	MATCH	23	3	1	\N	\N
+257	38	MATCH	28	1	2	\N	\N
+260	38	MATCH	35	0	1	\N	\N
+261	38	MATCH	12	2	1	\N	\N
+262	38	MATCH	6	0	1	\N	\N
+264	38	MATCH	13	2	1	\N	\N
+265	38	MATCH	18	1	0	\N	\N
+267	38	MATCH	30	2	1	\N	\N
+270	38	MATCH	31	1	0	\N	\N
+199	32	MATCH	5	1	2	\N	\N
+200	32	MATCH	10	1	1	\N	\N
+168	53	MATCH	17	2	1	\N	\N
+204	32	MATCH	17	2	1	\N	\N
+202	32	MATCH	22	1	0	\N	\N
+162	53	MATCH	4	3	0	\N	\N
+268	38	MATCH	24	0	1	\N	\N
+163	53	MATCH	5	0	2	\N	\N
+164	53	MATCH	10	1	0	\N	\N
+165	53	MATCH	11	2	1	\N	\N
+166	53	MATCH	22	0	2	\N	\N
+167	53	MATCH	16	1	2	\N	\N
+170	53	MATCH	28	0	2	\N	\N
+169	53	MATCH	23	3	0	\N	\N
+175	53	MATCH	6	0	2	\N	\N
+172	53	MATCH	34	2	1	\N	\N
+174	53	MATCH	12	2	2	\N	\N
+179	53	MATCH	19	3	1	\N	\N
+177	53	MATCH	13	2	1	\N	\N
+178	53	MATCH	18	2	1	\N	\N
+180	53	MATCH	30	2	1	\N	\N
+159	44	BRACKETWINNER	\N	\N	\N	2	5
+259	38	MATCH	34	3	0	\N	\N
+263	38	MATCH	7	3	0	\N	\N
+272	38	MATCH	37	2	0	\N	\N
+221	32	MATCH	37	3	0	\N	\N
+201	32	MATCH	11	3	1	\N	\N
+207	32	MATCH	29	1	2	\N	\N
+213	32	MATCH	13	0	1	\N	\N
+211	32	MATCH	6	1	0	\N	\N
+212	32	MATCH	7	2	0	\N	\N
+215	32	MATCH	19	2	0	\N	\N
+220	32	MATCH	36	1	1	\N	\N
+237	32	MATCH	43	2	0	\N	\N
+238	32	MATCH	44	2	0	\N	\N
+243	32	MATCH	49	1	3	\N	\N
+240	32	MATCH	46	1	2	\N	\N
+239	32	MATCH	45	0	1	\N	\N
+241	32	MATCH	47	1	0	\N	\N
+258	38	MATCH	29	1	2	\N	\N
+209	32	MATCH	35	2	0	\N	\N
+210	32	MATCH	12	0	1	\N	\N
+219	32	MATCH	31	2	1	\N	\N
+225	32	MATCH	15	0	1	\N	\N
+223	32	MATCH	9	1	0	\N	\N
+273	38	MATCH	8	0	2	\N	\N
+229	32	MATCH	27	1	0	\N	\N
+228	32	MATCH	26	1	2	\N	\N
+230	32	MATCH	39	1	1	\N	\N
+234	32	MATCH	40	0	1	\N	\N
+233	32	MATCH	32	2	0	\N	\N
+173	53	MATCH	35	3	0	\N	\N
+274	38	MATCH	9	1	1	\N	\N
+266	38	MATCH	19	2	1	\N	\N
+182	53	MATCH	25	3	1	\N	\N
+183	53	MATCH	31	1	2	\N	\N
+184	53	MATCH	36	0	2	\N	\N
+185	53	MATCH	37	3	2	\N	\N
+186	53	MATCH	8	1	2	\N	\N
+189	53	MATCH	14	1	2	\N	\N
+231	32	MATCH	38	1	0	\N	\N
+192	53	MATCH	27	2	1	\N	\N
+193	53	MATCH	26	0	2	\N	\N
+269	38	MATCH	25	2	0	\N	\N
+271	38	MATCH	36	2	1	\N	\N
+190	53	MATCH	20	0	2	\N	\N
+226	32	MATCH	20	0	2	\N	\N
+195	53	MATCH	38	1	2	\N	\N
+224	32	MATCH	14	0	1	\N	\N
+227	32	MATCH	21	0	2	\N	\N
+236	32	MATCH	42	2	1	\N	\N
+245	32	MATCH	51	2	0	\N	\N
+242	32	MATCH	48	2	1	\N	\N
+244	32	MATCH	50	2	1	\N	\N
+246	32	MATCH	52	2	1	\N	\N
+248	32	MATCH	54	1	3	\N	\N
+276	38	MATCH	14	1	2	\N	\N
+284	38	MATCH	33	1	2	\N	\N
+285	38	BRACKETWINNER	\N	\N	\N	5	1
+286	38	BRACKETWINNER	\N	\N	\N	4	2
+287	38	BRACKETWINNER	\N	\N	\N	3	3
+288	38	BRACKETWINNER	\N	\N	\N	19	4
+289	38	BRACKETWINNER	\N	\N	\N	2	5
+291	38	CHAMPION	\N	\N	\N	3	\N
+293	30	MATCH	5	1	3	\N	\N
+294	30	MATCH	10	2	0	\N	\N
+295	30	MATCH	11	2	1	\N	\N
+296	30	MATCH	22	1	1	\N	\N
+297	30	MATCH	16	0	1	\N	\N
+298	30	MATCH	17	2	1	\N	\N
+344	44	MATCH	34	1	0	\N	\N
+300	30	MATCH	28	1	3	\N	\N
+301	30	MATCH	29	1	2	\N	\N
+302	30	MATCH	34	1	2	\N	\N
+303	30	MATCH	35	2	0	\N	\N
+304	30	MATCH	12	1	2	\N	\N
+305	30	MATCH	6	1	1	\N	\N
+306	30	MATCH	7	2	0	\N	\N
+307	30	MATCH	13	0	2	\N	\N
+310	30	MATCH	24	1	2	\N	\N
+312	30	MATCH	25	2	1	\N	\N
+315	30	MATCH	37	2	0	\N	\N
+316	30	MATCH	8	0	1	\N	\N
+317	30	MATCH	9	2	1	\N	\N
+318	30	MATCH	15	0	1	\N	\N
+319	30	MATCH	14	2	0	\N	\N
+321	30	MATCH	21	2	1	\N	\N
+322	30	MATCH	27	1	0	\N	\N
+324	30	MATCH	39	1	3	\N	\N
+325	30	MATCH	38	1	2	\N	\N
+326	30	MATCH	32	2	0	\N	\N
+328	30	BRACKETWINNER	\N	\N	\N	5	1
+330	30	BRACKETWINNER	\N	\N	\N	3	3
+331	30	BRACKETWINNER	\N	\N	\N	19	4
+332	30	BRACKETWINNER	\N	\N	\N	2	5
+333	30	BRACKETWINNER	\N	\N	\N	13	6
+329	30	BRACKETWINNER	\N	\N	\N	4	2
+334	44	MATCH	4	1	0	\N	\N
+335	44	MATCH	5	0	2	\N	\N
+336	44	MATCH	10	1	1	\N	\N
+337	44	MATCH	11	1	0	\N	\N
+338	44	MATCH	22	1	1	\N	\N
+339	44	MATCH	16	2	0	\N	\N
+340	44	MATCH	17	3	1	\N	\N
+341	44	MATCH	23	2	0	\N	\N
+342	44	MATCH	28	0	0	\N	\N
+345	44	MATCH	35	2	0	\N	\N
+346	47	MATCH	4	2	1	\N	\N
+347	47	MATCH	5	1	2	\N	\N
+348	47	MATCH	10	1	2	\N	\N
+349	47	MATCH	11	2	1	\N	\N
+350	47	MATCH	22	2	1	\N	\N
+351	47	MATCH	16	2	1	\N	\N
+352	47	MATCH	17	2	1	\N	\N
+353	47	MATCH	23	2	1	\N	\N
+358	47	MATCH	12	2	1	\N	\N
+361	47	BRACKETWINNER	\N	\N	\N	5	1
+362	47	BRACKETWINNER	\N	\N	\N	4	2
+363	47	BRACKETWINNER	\N	\N	\N	3	3
+364	47	BRACKETWINNER	\N	\N	\N	19	4
+365	47	BRACKETWINNER	\N	\N	\N	8	5
+366	47	BRACKETWINNER	\N	\N	\N	13	6
+368	49	MATCH	4	1	0	\N	\N
+369	49	MATCH	5	1	1	\N	\N
+370	49	MATCH	10	0	0	\N	\N
+371	49	MATCH	11	2	2	\N	\N
+372	49	MATCH	22	2	1	\N	\N
+373	49	MATCH	16	2	1	\N	\N
+374	49	MATCH	17	3	0	\N	\N
+375	49	MATCH	23	3	1	\N	\N
+376	49	MATCH	28	0	0	\N	\N
+377	49	MATCH	29	0	1	\N	\N
+378	49	MATCH	34	3	1	\N	\N
+379	49	MATCH	35	0	1	\N	\N
+380	49	MATCH	12	1	1	\N	\N
+382	49	MATCH	7	1	2	\N	\N
+383	49	MATCH	13	2	2	\N	\N
+384	49	MATCH	18	2	1	\N	\N
+386	49	MATCH	30	1	0	\N	\N
+387	49	MATCH	24	2	2	\N	\N
+388	49	MATCH	25	3	0	\N	\N
+389	49	MATCH	31	3	0	\N	\N
+390	49	MATCH	36	2	0	\N	\N
+391	49	MATCH	37	2	3	\N	\N
+392	49	MATCH	8	1	2	\N	\N
+393	49	MATCH	9	0	2	\N	\N
+394	49	MATCH	15	2	2	\N	\N
+395	49	MATCH	14	0	2	\N	\N
+396	49	MATCH	20	1	2	\N	\N
+397	49	MATCH	21	0	3	\N	\N
+398	49	MATCH	27	1	1	\N	\N
+399	49	MATCH	26	1	2	\N	\N
+400	49	MATCH	39	1	2	\N	\N
+401	49	MATCH	38	1	3	\N	\N
+402	49	MATCH	32	2	1	\N	\N
+403	49	MATCH	33	1	3	\N	\N
+404	49	MATCH	40	3	2	\N	\N
+405	49	MATCH	41	0	1	\N	\N
+406	49	MATCH	42	1	0	\N	\N
+407	49	MATCH	43	2	3	\N	\N
+408	49	MATCH	44	2	1	\N	\N
+409	49	MATCH	45	1	2	\N	\N
+410	49	MATCH	46	2	1	\N	\N
+354	47	MATCH	28	1	0	\N	\N
+355	47	MATCH	29	1	0	\N	\N
+356	47	MATCH	34	1	0	\N	\N
+359	47	MATCH	6	1	0	\N	\N
+360	47	MATCH	7	2	0	\N	\N
+299	30	MATCH	23	2	1	\N	\N
+343	44	MATCH	29	0	0	\N	\N
+290	38	BRACKETWINNER	\N	\N	\N	7	6
+367	47	CHAMPION	\N	\N	\N	3	\N
+283	38	MATCH	32	2	0	\N	\N
+327	30	MATCH	33	0	2	\N	\N
+281	38	MATCH	39	1	0	\N	\N
+381	49	MATCH	6	0	2	\N	\N
+385	49	MATCH	19	3	1	\N	\N
+311	30	MATCH	19	2	1	\N	\N
+308	30	MATCH	18	2	1	\N	\N
+309	30	MATCH	30	2	0	\N	\N
+314	30	MATCH	36	2	1	\N	\N
+275	38	MATCH	15	0	2	\N	\N
+279	38	MATCH	27	1	0	\N	\N
+280	38	MATCH	26	1	2	\N	\N
+277	38	MATCH	20	0	1	\N	\N
+278	38	MATCH	21	0	2	\N	\N
+282	38	MATCH	38	0	1	\N	\N
+320	30	MATCH	20	1	0	\N	\N
+323	30	MATCH	26	0	2	\N	\N
+411	49	MATCH	47	0	1	\N	\N
+412	49	MATCH	48	3	1	\N	\N
+413	49	MATCH	49	1	2	\N	\N
+414	49	MATCH	50	2	0	\N	\N
+415	49	MATCH	51	0	1	\N	\N
+416	49	MATCH	52	2	1	\N	\N
+417	49	MATCH	53	1	3	\N	\N
+418	49	MATCH	54	2	1	\N	\N
+419	49	BRACKETWINNER	\N	\N	\N	1	1
+420	49	BRACKETWINNER	\N	\N	\N	4	2
+421	49	BRACKETWINNER	\N	\N	\N	3	3
+422	49	BRACKETWINNER	\N	\N	\N	19	4
+423	49	BRACKETWINNER	\N	\N	\N	8	5
+424	49	BRACKETWINNER	\N	\N	\N	11	6
+428	23	MATCH	10	2	0	\N	\N
+431	23	MATCH	16	0	1	\N	\N
+449	23	MATCH	37	2	0	\N	\N
+459	23	MATCH	38	0	2	\N	\N
+472	23	MATCH	50	1	0	\N	\N
+473	23	MATCH	51	2	1	\N	\N
+505	55	MATCH	20	0	2	\N	\N
+514	55	MATCH	41	1	0	\N	\N
+521	31	MATCH	4	4	1	\N	\N
+522	31	MATCH	5	0	2	\N	\N
+523	31	MATCH	10	2	1	\N	\N
+524	31	MATCH	11	4	0	\N	\N
+525	31	MATCH	22	0	1	\N	\N
+526	31	MATCH	16	3	2	\N	\N
+527	31	MATCH	17	1	0	\N	\N
+528	31	MATCH	23	3	2	\N	\N
+529	31	MATCH	28	1	3	\N	\N
+530	31	MATCH	29	2	1	\N	\N
+531	31	MATCH	34	0	1	\N	\N
+536	31	MATCH	13	2	1	\N	\N
+537	31	MATCH	18	0	1	\N	\N
+540	31	MATCH	24	2	1	\N	\N
+543	31	MATCH	36	0	1	\N	\N
+503	55	MATCH	15	0	1	\N	\N
+479	55	MATCH	10	0	2	\N	\N
+480	55	MATCH	11	1	0	\N	\N
+483	55	MATCH	17	2	1	\N	\N
+486	55	MATCH	29	1	1	\N	\N
+500	55	MATCH	37	1	0	\N	\N
+532	31	MATCH	35	2	0	\N	\N
+487	55	MATCH	34	0	0	\N	\N
+488	55	MATCH	35	3	0	\N	\N
+489	55	MATCH	12	1	0	\N	\N
+452	23	MATCH	14	1	1	\N	\N
+490	55	MATCH	6	1	1	\N	\N
+494	55	MATCH	19	2	1	\N	\N
+493	55	MATCH	18	0	1	\N	\N
+450	23	MATCH	8	0	1	\N	\N
+426	23	MATCH	4	3	0	\N	\N
+427	23	MATCH	5	1	2	\N	\N
+430	23	MATCH	22	2	1	\N	\N
+432	23	MATCH	17	2	1	\N	\N
+433	23	MATCH	23	3	1	\N	\N
+435	23	MATCH	29	1	0	\N	\N
+492	55	MATCH	13	1	0	\N	\N
+458	23	MATCH	39	1	0	\N	\N
+438	23	MATCH	12	1	1	\N	\N
+439	23	MATCH	6	0	1	\N	\N
+437	23	MATCH	35	3	0	\N	\N
+533	31	MATCH	12	1	0	\N	\N
+495	55	MATCH	30	1	0	\N	\N
+443	23	MATCH	19	2	1	\N	\N
+507	55	MATCH	27	1	0	\N	\N
+461	23	MATCH	32	2	0	\N	\N
+491	55	MATCH	7	2	0	\N	\N
+497	55	MATCH	25	2	0	\N	\N
+456	23	MATCH	26	0	2	\N	\N
+482	55	MATCH	16	3	0	\N	\N
+445	23	MATCH	24	1	2	\N	\N
+446	23	MATCH	25	2	1	\N	\N
+499	55	MATCH	36	1	1	\N	\N
+448	23	MATCH	36	1	0	\N	\N
+478	55	MATCH	5	1	2	\N	\N
+425	49	CHAMPION	\N	\N	\N	3	\N
+440	23	MATCH	7	2	1	\N	\N
+496	55	MATCH	24	0	1	\N	\N
+498	55	MATCH	31	2	0	\N	\N
+451	23	MATCH	9	0	1	\N	\N
+502	55	MATCH	9	0	0	\N	\N
+504	55	MATCH	14	0	2	\N	\N
+453	23	MATCH	15	0	1	\N	\N
+511	55	MATCH	32	1	0	\N	\N
+508	55	MATCH	26	1	2	\N	\N
+510	55	MATCH	38	0	2	\N	\N
+457	23	MATCH	27	0	1	\N	\N
+512	55	MATCH	33	1	2	\N	\N
+506	55	MATCH	21	0	1	\N	\N
+441	23	MATCH	13	1	1	\N	\N
+434	23	MATCH	28	1	1	\N	\N
+460	23	MATCH	33	1	2	\N	\N
+463	23	MATCH	41	0	1	\N	\N
+484	55	MATCH	23	2	0	\N	\N
+534	31	MATCH	6	0	0	\N	\N
+535	31	MATCH	7	2	0	\N	\N
+538	31	MATCH	19	2	0	\N	\N
+539	31	MATCH	30	1	0	\N	\N
+541	31	MATCH	25	1	0	\N	\N
+542	31	MATCH	31	1	0	\N	\N
+544	31	MATCH	37	2	0	\N	\N
+545	31	MATCH	8	0	1	\N	\N
+546	31	MATCH	9	0	0	\N	\N
+436	23	MATCH	34	0	1	\N	\N
+442	23	MATCH	18	0	0	\N	\N
+444	23	MATCH	30	2	0	\N	\N
+462	23	MATCH	40	1	2	\N	\N
+454	23	MATCH	20	0	1	\N	\N
+509	55	MATCH	39	1	0	\N	\N
+464	23	MATCH	42	1	2	\N	\N
+465	23	MATCH	43	2	0	\N	\N
+468	23	MATCH	46	1	2	\N	\N
+467	23	MATCH	45	2	1	\N	\N
+513	55	MATCH	40	0	1	\N	\N
+515	55	MATCH	42	0	1	\N	\N
+517	55	MATCH	44	2	0	\N	\N
+518	55	MATCH	45	0	1	\N	\N
+516	55	MATCH	43	1	0	\N	\N
+520	55	MATCH	47	1	0	\N	\N
+519	55	MATCH	46	0	1	\N	\N
+469	23	MATCH	47	1	0	\N	\N
+470	23	MATCH	48	2	1	\N	\N
+471	23	MATCH	49	1	0	\N	\N
+475	23	MATCH	53	2	1	\N	\N
+474	23	MATCH	52	1	0	\N	\N
+476	23	MATCH	54	1	2	\N	\N
+548	31	MATCH	15	2	1	\N	\N
+553	31	MATCH	39	0	1	\N	\N
+557	31	CHAMPION	\N	\N	\N	2	\N
+558	31	BRACKETWINNER	\N	\N	\N	5	1
+559	31	BRACKETWINNER	\N	\N	\N	18	2
+560	31	BRACKETWINNER	\N	\N	\N	3	3
+561	31	BRACKETWINNER	\N	\N	\N	19	4
+562	31	BRACKETWINNER	\N	\N	\N	2	5
+563	31	BRACKETWINNER	\N	\N	\N	13	6
+564	24	BRACKETWINNER	\N	\N	\N	5	1
+565	24	BRACKETWINNER	\N	\N	\N	4	2
+566	24	BRACKETWINNER	\N	\N	\N	3	3
+567	24	BRACKETWINNER	\N	\N	\N	19	4
+568	24	BRACKETWINNER	\N	\N	\N	8	5
+569	24	BRACKETWINNER	\N	\N	\N	13	6
+570	24	CHAMPION	\N	\N	\N	3	\N
+572	40	MATCH	5	0	2	\N	\N
+573	58	CHAMPION	\N	\N	\N	19	\N
+582	59	MATCH	28	1	2	\N	\N
+596	59	MATCH	36	1	2	\N	\N
+598	59	MATCH	8	1	2	\N	\N
+599	59	MATCH	9	0	1	\N	\N
+600	59	MATCH	14	0	0	\N	\N
+601	59	MATCH	15	1	1	\N	\N
+604	59	MATCH	26	1	3	\N	\N
+609	59	MATCH	32	1	0	\N	\N
+614	59	MATCH	44	2	0	\N	\N
+622	59	MATCH	52	1	0	\N	\N
+577	59	MATCH	11	1	0	\N	\N
+648	50	MATCH	37	3	2	\N	\N
+574	59	MATCH	4	4	1	\N	\N
+575	59	MATCH	5	0	2	\N	\N
+579	59	MATCH	16	2	0	\N	\N
+677	59	CHAMPION	\N	\N	\N	3	\N
+580	59	MATCH	17	2	1	\N	\N
+583	59	MATCH	29	1	2	\N	\N
+584	59	MATCH	34	2	1	\N	\N
+585	59	MATCH	35	3	0	\N	\N
+586	59	MATCH	12	2	1	\N	\N
+587	59	MATCH	6	0	2	\N	\N
+588	59	MATCH	7	3	0	\N	\N
+589	59	MATCH	13	3	2	\N	\N
+642	50	MATCH	19	3	1	\N	\N
+602	59	MATCH	20	0	2	\N	\N
+593	59	MATCH	24	2	1	\N	\N
+594	59	MATCH	25	2	0	\N	\N
+595	59	MATCH	31	2	0	\N	\N
+597	59	MATCH	37	3	0	\N	\N
+603	59	MATCH	21	0	2	\N	\N
+605	59	MATCH	27	1	0	\N	\N
+633	50	MATCH	28	0	2	\N	\N
+639	50	MATCH	7	3	0	\N	\N
+640	50	MATCH	13	2	0	\N	\N
+645	50	MATCH	25	3	2	\N	\N
+651	50	MATCH	14	0	2	\N	\N
+653	50	MATCH	20	0	1	\N	\N
+654	50	MATCH	21	0	2	\N	\N
+656	50	MATCH	27	2	1	\N	\N
+657	50	MATCH	39	3	0	\N	\N
+658	50	MATCH	38	0	1	\N	\N
+664	50	MATCH	43	2	0	\N	\N
+669	50	MATCH	48	1	0	\N	\N
+670	50	MATCH	49	0	2	\N	\N
+671	50	MATCH	50	0	1	\N	\N
+672	50	MATCH	51	3	1	\N	\N
+673	50	MATCH	52	3	1	\N	\N
+674	50	MATCH	53	3	0	\N	\N
+675	50	MATCH	54	2	1	\N	\N
+676	59	BRACKETWINNER	\N	\N	\N	5	1
+678	59	BRACKETWINNER	\N	\N	\N	18	2
+679	59	BRACKETWINNER	\N	\N	\N	3	3
+680	59	BRACKETWINNER	\N	\N	\N	19	4
+681	59	BRACKETWINNER	\N	\N	\N	2	5
+627	50	MATCH	10	0	2	\N	\N
+628	50	MATCH	11	2	1	\N	\N
+629	50	MATCH	22	1	0	\N	\N
+630	50	MATCH	16	2	0	\N	\N
+631	50	MATCH	17	2	0	\N	\N
+632	50	MATCH	23	2	1	\N	\N
+637	50	MATCH	12	1	0	\N	\N
+571	40	CHAMPION	\N	\N	\N	19	\N
+625	50	MATCH	4	2	0	\N	\N
+660	50	MATCH	32	2	0	\N	\N
+659	50	MATCH	33	0	1	\N	\N
+634	50	MATCH	29	2	1	\N	\N
+576	59	MATCH	10	0	2	\N	\N
+578	59	MATCH	22	1	1	\N	\N
+581	59	MATCH	23	3	0	\N	\N
+547	31	MATCH	14	0	1	\N	\N
+550	31	MATCH	21	0	2	\N	\N
+549	31	MATCH	20	1	0	\N	\N
+551	31	MATCH	26	0	1	\N	\N
+552	31	MATCH	27	0	0	\N	\N
+555	31	MATCH	33	0	1	\N	\N
+556	31	MATCH	32	1	0	\N	\N
+636	50	MATCH	35	2	1	\N	\N
+638	50	MATCH	6	0	2	\N	\N
+592	59	MATCH	30	2	1	\N	\N
+641	50	MATCH	18	2	0	\N	\N
+643	50	MATCH	30	2	1	\N	\N
+644	50	MATCH	24	1	0	\N	\N
+646	50	MATCH	31	2	1	\N	\N
+647	50	MATCH	36	0	2	\N	\N
+650	50	MATCH	9	2	1	\N	\N
+652	50	MATCH	15	1	2	\N	\N
+649	50	MATCH	8	1	2	\N	\N
+590	59	MATCH	18	2	0	\N	\N
+655	50	MATCH	26	1	1	\N	\N
+606	59	MATCH	39	1	2	\N	\N
+607	59	MATCH	38	0	3	\N	\N
+608	59	MATCH	33	0	2	\N	\N
+665	50	MATCH	44	2	0	\N	\N
+668	50	MATCH	47	2	1	\N	\N
+667	50	MATCH	46	2	1	\N	\N
+666	50	MATCH	45	0	1	\N	\N
+663	50	MATCH	42	2	3	\N	\N
+661	50	MATCH	40	2	1	\N	\N
+662	50	MATCH	41	2	1	\N	\N
+611	59	MATCH	41	1	0	\N	\N
+610	59	MATCH	40	0	2	\N	\N
+612	59	MATCH	42	1	3	\N	\N
+615	59	MATCH	45	0	1	\N	\N
+616	59	MATCH	46	0	1	\N	\N
+617	59	MATCH	47	1	0	\N	\N
+620	59	MATCH	50	4	1	\N	\N
+621	59	MATCH	51	1	2	\N	\N
+623	59	MATCH	53	3	0	\N	\N
+618	59	MATCH	48	1	3	\N	\N
+619	59	MATCH	49	0	1	\N	\N
+624	59	MATCH	54	1	3	\N	\N
+682	59	BRACKETWINNER	\N	\N	\N	13	6
+626	50	MATCH	5	0	1	\N	\N
+684	50	BRACKETWINNER	\N	\N	\N	5	1
+685	50	BRACKETWINNER	\N	\N	\N	4	2
+686	50	BRACKETWINNER	\N	\N	\N	3	3
+687	50	BRACKETWINNER	\N	\N	\N	19	4
+689	50	BRACKETWINNER	\N	\N	\N	13	6
+635	50	MATCH	34	2	0	\N	\N
+690	37	MATCH	4	2	0	\N	\N
+691	37	MATCH	5	1	1	\N	\N
+692	37	MATCH	10	1	2	\N	\N
+693	37	MATCH	11	2	0	\N	\N
+694	37	MATCH	22	0	0	\N	\N
+695	37	MATCH	16	3	0	\N	\N
+696	37	MATCH	17	1	1	\N	\N
+697	37	MATCH	23	4	1	\N	\N
+698	37	MATCH	28	1	2	\N	\N
+699	37	MATCH	29	2	1	\N	\N
+700	37	MATCH	34	1	0	\N	\N
+701	37	MATCH	35	2	0	\N	\N
+702	37	MATCH	12	2	1	\N	\N
+703	37	MATCH	6	1	2	\N	\N
+704	37	MATCH	7	3	0	\N	\N
+705	37	MATCH	13	2	0	\N	\N
+706	37	MATCH	18	2	1	\N	\N
+707	37	MATCH	19	2	1	\N	\N
+708	37	MATCH	30	1	1	\N	\N
+709	37	MATCH	24	0	0	\N	\N
+710	37	MATCH	25	3	1	\N	\N
+711	37	MATCH	31	4	0	\N	\N
+712	37	MATCH	36	2	2	\N	\N
+713	37	MATCH	37	1	1	\N	\N
+714	37	MATCH	8	1	2	\N	\N
+715	37	MATCH	9	0	0	\N	\N
+716	37	MATCH	14	1	4	\N	\N
+717	37	MATCH	15	2	2	\N	\N
+718	37	MATCH	20	2	3	\N	\N
+719	37	MATCH	21	1	3	\N	\N
+720	37	MATCH	26	2	3	\N	\N
+721	37	MATCH	27	1	1	\N	\N
+722	37	MATCH	39	0	1	\N	\N
+723	37	MATCH	38	1	2	\N	\N
+724	37	MATCH	33	0	1	\N	\N
+725	37	MATCH	32	1	0	\N	\N
+477	55	MATCH	4	3	1	\N	\N
+481	55	MATCH	22	1	2	\N	\N
+726	33	MATCH	4	2	1	\N	\N
+727	33	MATCH	5	1	2	\N	\N
+728	33	MATCH	10	1	2	\N	\N
+729	33	MATCH	11	2	1	\N	\N
+730	33	MATCH	22	1	2	\N	\N
+731	33	MATCH	16	2	1	\N	\N
+732	33	MATCH	17	2	1	\N	\N
+733	33	MATCH	23	2	1	\N	\N
+734	33	MATCH	28	1	2	\N	\N
+735	33	MATCH	29	1	2	\N	\N
+736	33	MATCH	34	2	1	\N	\N
+737	33	MATCH	35	2	1	\N	\N
+738	33	MATCH	12	1	2	\N	\N
+739	33	MATCH	6	1	2	\N	\N
+740	33	MATCH	7	2	1	\N	\N
+741	33	MATCH	13	2	1	\N	\N
+742	33	MATCH	18	2	1	\N	\N
+743	33	MATCH	19	2	1	\N	\N
+744	33	MATCH	30	1	2	\N	\N
+745	33	MATCH	24	1	2	\N	\N
+746	33	MATCH	25	2	1	\N	\N
+747	33	MATCH	31	2	1	\N	\N
+748	33	MATCH	36	1	2	\N	\N
+749	33	MATCH	37	2	1	\N	\N
+750	33	MATCH	8	1	2	\N	\N
+751	33	MATCH	9	2	1	\N	\N
+752	33	MATCH	15	1	2	\N	\N
+753	33	MATCH	14	1	2	\N	\N
+754	33	MATCH	20	1	2	\N	\N
+755	33	MATCH	21	1	2	\N	\N
+756	33	MATCH	27	2	1	\N	\N
+757	33	MATCH	26	1	2	\N	\N
+758	33	MATCH	39	1	2	\N	\N
+759	33	MATCH	38	1	2	\N	\N
+760	33	MATCH	32	2	1	\N	\N
+761	33	MATCH	33	2	1	\N	\N
+762	33	BRACKETWINNER	\N	\N	\N	5	1
+763	33	BRACKETWINNER	\N	\N	\N	4	2
+764	33	BRACKETWINNER	\N	\N	\N	3	3
+765	33	BRACKETWINNER	\N	\N	\N	19	4
+766	33	BRACKETWINNER	\N	\N	\N	16	5
+767	33	BRACKETWINNER	\N	\N	\N	13	6
+768	33	CHAMPION	\N	\N	\N	3	\N
+769	27	MATCH	4	2	0	\N	\N
+770	27	MATCH	5	0	1	\N	\N
+771	27	MATCH	10	1	1	\N	\N
+772	27	MATCH	11	2	0	\N	\N
+773	27	MATCH	22	0	1	\N	\N
+774	27	MATCH	16	2	0	\N	\N
+775	27	MATCH	17	2	0	\N	\N
+776	27	MATCH	23	2	1	\N	\N
+777	27	MATCH	28	1	1	\N	\N
+778	27	MATCH	29	3	1	\N	\N
+780	27	MATCH	35	2	0	\N	\N
+781	27	BRACKETWINNER	\N	\N	\N	5	1
+782	27	BRACKETWINNER	\N	\N	\N	4	2
+783	27	BRACKETWINNER	\N	\N	\N	3	3
+784	27	BRACKETWINNER	\N	\N	\N	19	4
+785	27	BRACKETWINNER	\N	\N	\N	2	5
+786	27	BRACKETWINNER	\N	\N	\N	13	6
+787	27	CHAMPION	\N	\N	\N	3	\N
+788	36	MATCH	4	3	0	\N	\N
+789	36	MATCH	5	2	1	\N	\N
+790	36	MATCH	10	1	2	\N	\N
+791	36	MATCH	11	3	2	\N	\N
+792	36	MATCH	22	3	3	\N	\N
+793	36	MATCH	16	3	1	\N	\N
+794	36	MATCH	17	3	1	\N	\N
+796	36	MATCH	28	1	2	\N	\N
+797	12	MATCH	4	2	0	\N	\N
+801	12	MATCH	11	3	0	\N	\N
+802	12	MATCH	22	1	1	\N	\N
+804	12	MATCH	16	2	1	\N	\N
+809	12	MATCH	28	0	3	\N	\N
+807	12	MATCH	23	1	0	\N	\N
+810	12	MATCH	29	2	0	\N	\N
+811	12	MATCH	34	1	0	\N	\N
+812	36	MATCH	6	1	2	\N	\N
+813	12	MATCH	35	3	1	\N	\N
+683	50	CHAMPION	\N	\N	\N	3	\N
+798	12	MATCH	5	0	2	\N	\N
+800	12	MATCH	10	2	1	\N	\N
+805	12	MATCH	17	2	0	\N	\N
+795	36	MATCH	23	3	1	\N	\N
+799	36	MATCH	29	2	1	\N	\N
+779	27	MATCH	34	2	0	\N	\N
+803	36	MATCH	34	1	0	\N	\N
+806	36	MATCH	35	2	1	\N	\N
+814	12	MATCH	12	1	0	\N	\N
+815	12	MATCH	6	0	1	\N	\N
+817	12	MATCH	13	2	0	\N	\N
+818	12	MATCH	18	0	1	\N	\N
+819	12	MATCH	19	2	1	\N	\N
+820	12	MATCH	30	3	2	\N	\N
+821	12	MATCH	24	2	0	\N	\N
+822	12	MATCH	25	2	0	\N	\N
+823	12	MATCH	31	3	1	\N	\N
+824	12	MATCH	36	1	0	\N	\N
+825	12	MATCH	37	1	2	\N	\N
+826	12	MATCH	8	0	2	\N	\N
+827	12	MATCH	9	1	0	\N	\N
+829	12	MATCH	14	0	2	\N	\N
+830	12	MATCH	15	0	2	\N	\N
+831	12	MATCH	20	0	1	\N	\N
+832	12	MATCH	21	1	2	\N	\N
+834	12	MATCH	26	1	3	\N	\N
+835	12	MATCH	27	2	1	\N	\N
+839	12	MATCH	33	1	2	\N	\N
+841	36	MATCH	19	2	1	\N	\N
+844	36	MATCH	25	4	1	\N	\N
+845	36	MATCH	31	1	2	\N	\N
+846	36	MATCH	36	1	1	\N	\N
+847	36	MATCH	37	3	0	\N	\N
+848	36	MATCH	8	1	3	\N	\N
+849	36	MATCH	9	0	2	\N	\N
+850	36	MATCH	15	2	0	\N	\N
+852	36	MATCH	20	1	2	\N	\N
+857	36	MATCH	38	0	1	\N	\N
+854	36	MATCH	27	2	1	\N	\N
+855	36	MATCH	26	1	2	\N	\N
+856	36	MATCH	39	2	0	\N	\N
+860	36	BRACKETWINNER	\N	\N	\N	5	1
+861	36	BRACKETWINNER	\N	\N	\N	4	2
+862	36	BRACKETWINNER	\N	\N	\N	3	3
+863	36	BRACKETWINNER	\N	\N	\N	19	4
+864	36	BRACKETWINNER	\N	\N	\N	8	5
+865	36	BRACKETWINNER	\N	\N	\N	13	6
+867	28	BRACKETWINNER	\N	\N	\N	4	2
+868	28	BRACKETWINNER	\N	\N	\N	3	3
+869	28	BRACKETWINNER	\N	\N	\N	19	4
+871	28	BRACKETWINNER	\N	\N	\N	13	6
+872	53	CHAMPION	\N	\N	\N	3	\N
+873	53	BRACKETWINNER	\N	\N	\N	5	1
+874	53	BRACKETWINNER	\N	\N	\N	3	3
+875	53	BRACKETWINNER	\N	\N	\N	13	6
+876	53	BRACKETWINNER	\N	\N	\N	8	5
+877	53	BRACKETWINNER	\N	\N	\N	19	4
+878	53	BRACKETWINNER	\N	\N	\N	4	2
+879	60	CHAMPION	\N	\N	\N	3	\N
+880	60	BRACKETWINNER	\N	\N	\N	5	1
+881	60	BRACKETWINNER	\N	\N	\N	4	2
+882	60	BRACKETWINNER	\N	\N	\N	3	3
+886	24	MATCH	4	2	0	\N	\N
+887	24	MATCH	5	1	2	\N	\N
+888	24	MATCH	10	1	2	\N	\N
+889	24	MATCH	11	2	1	\N	\N
+890	24	MATCH	22	2	2	\N	\N
+891	24	MATCH	16	2	1	\N	\N
+892	24	MATCH	17	2	0	\N	\N
+893	64	MATCH	4	4	1	\N	\N
+894	65	MATCH	4	2	0	\N	\N
+895	64	MATCH	5	2	2	\N	\N
+896	65	MATCH	5	0	1	\N	\N
+897	64	MATCH	10	2	3	\N	\N
+898	65	MATCH	10	0	0	\N	\N
+899	64	MATCH	11	3	2	\N	\N
+900	65	MATCH	11	1	0	\N	\N
+901	64	MATCH	22	1	3	\N	\N
+902	65	MATCH	22	0	1	\N	\N
+903	64	MATCH	16	2	2	\N	\N
+904	65	MATCH	16	1	0	\N	\N
+905	64	MATCH	17	4	1	\N	\N
+906	65	MATCH	17	2	1	\N	\N
+907	65	MATCH	23	2	0	\N	\N
+908	65	MATCH	28	0	3	\N	\N
+909	65	MATCH	29	1	2	\N	\N
+910	65	MATCH	34	1	0	\N	\N
+911	65	MATCH	35	4	0	\N	\N
+912	65	MATCH	12	2	0	\N	\N
+913	65	MATCH	6	0	0	\N	\N
+914	65	MATCH	7	1	0	\N	\N
+915	65	MATCH	13	2	1	\N	\N
+916	65	MATCH	18	1	0	\N	\N
+917	65	MATCH	19	3	1	\N	\N
+918	65	MATCH	30	1	3	\N	\N
+919	65	MATCH	24	1	0	\N	\N
+920	65	MATCH	25	3	0	\N	\N
+921	65	MATCH	31	0	0	\N	\N
+922	65	MATCH	36	0	1	\N	\N
+923	65	MATCH	37	2	1	\N	\N
+924	65	MATCH	8	0	2	\N	\N
+925	65	MATCH	9	1	1	\N	\N
+926	65	MATCH	14	0	2	\N	\N
+866	36	CHAMPION	\N	\N	\N	5	\N
+927	65	MATCH	15	1	1	\N	\N
+928	65	MATCH	20	1	1	\N	\N
+929	65	MATCH	21	1	2	\N	\N
+931	65	MATCH	26	0	3	\N	\N
+932	65	MATCH	27	1	0	\N	\N
+933	65	MATCH	39	0	2	\N	\N
+934	65	MATCH	38	0	1	\N	\N
+935	65	MATCH	33	3	1	\N	\N
+936	65	MATCH	32	2	0	\N	\N
+937	40	BRACKETWINNER	\N	\N	\N	5	1
+938	40	BRACKETWINNER	\N	\N	\N	4	2
+939	40	BRACKETWINNER	\N	\N	\N	3	3
+940	40	BRACKETWINNER	\N	\N	\N	19	4
+941	40	BRACKETWINNER	\N	\N	\N	2	5
+942	40	BRACKETWINNER	\N	\N	\N	13	6
+943	40	MATCH	10	1	1	\N	\N
+945	40	MATCH	22	1	3	\N	\N
+946	40	MATCH	16	1	0	\N	\N
+948	40	MATCH	23	2	1	\N	\N
+949	40	MATCH	28	2	2	\N	\N
+944	40	MATCH	11	3	1	\N	\N
+883	60	BRACKETWINNER	\N	\N	\N	19	4
+884	60	BRACKETWINNER	\N	\N	\N	2	5
+885	60	BRACKETWINNER	\N	\N	\N	11	6
+947	40	MATCH	17	2	1	\N	\N
+828	36	MATCH	7	2	0	\N	\N
+833	36	MATCH	13	2	1	\N	\N
+837	36	MATCH	18	1	1	\N	\N
+842	36	MATCH	30	2	1	\N	\N
+851	36	MATCH	14	1	2	\N	\N
+853	36	MATCH	21	1	2	\N	\N
+836	12	MATCH	39	1	1	\N	\N
+816	12	MATCH	7	3	0	\N	\N
+843	36	MATCH	24	1	2	\N	\N
+858	36	MATCH	32	2	1	\N	\N
+838	12	MATCH	38	0	3	\N	\N
+840	12	MATCH	32	2	0	\N	\N
+951	40	MATCH	34	2	1	\N	\N
+952	40	MATCH	35	2	0	\N	\N
+953	40	MATCH	12	2	0	\N	\N
+954	40	MATCH	6	2	3	\N	\N
+956	40	MATCH	13	2	0	\N	\N
+957	40	MATCH	18	2	1	\N	\N
+958	40	MATCH	19	2	2	\N	\N
+959	40	MATCH	30	3	1	\N	\N
+961	40	MATCH	25	3	0	\N	\N
+965	40	MATCH	8	2	3	\N	\N
+966	40	MATCH	9	2	1	\N	\N
+967	40	MATCH	14	0	1	\N	\N
+969	40	MATCH	20	0	2	\N	\N
+970	40	MATCH	21	0	2	\N	\N
+971	40	MATCH	26	2	2	\N	\N
+972	40	MATCH	27	2	1	\N	\N
+973	40	MATCH	39	1	2	\N	\N
+975	40	MATCH	33	1	3	\N	\N
+198	32	MATCH	4	4	1	\N	\N
+1061	54	MATCH	12	0	1	\N	\N
+429	23	MATCH	11	3	1	\N	\N
+978	66	MATCH	5	1	0	\N	\N
+989	66	MATCH	12	1	0	\N	\N
+996	66	MATCH	24	1	0	\N	\N
+1000	66	MATCH	37	2	1	\N	\N
+1001	66	MATCH	8	0	1	\N	\N
+1004	66	MATCH	14	1	3	\N	\N
+977	66	MATCH	4	2	0	\N	\N
+1013	39	MATCH	4	2	0	\N	\N
+1014	39	MATCH	5	1	1	\N	\N
+1017	39	MATCH	22	1	2	\N	\N
+1020	39	BRACKETWINNER	\N	\N	\N	5	1
+1021	39	BRACKETWINNER	\N	\N	\N	4	2
+1022	39	BRACKETWINNER	\N	\N	\N	3	3
+1023	39	BRACKETWINNER	\N	\N	\N	19	4
+1024	62	CHAMPION	\N	\N	\N	3	\N
+1025	62	BRACKETWINNER	\N	\N	\N	5	1
+1026	62	BRACKETWINNER	\N	\N	\N	4	2
+1027	62	BRACKETWINNER	\N	\N	\N	3	3
+1028	62	BRACKETWINNER	\N	\N	\N	19	4
+1030	62	BRACKETWINNER	\N	\N	\N	13	6
+1031	62	MATCH	4	2	0	\N	\N
+1032	62	MATCH	5	1	2	\N	\N
+1033	62	MATCH	10	1	3	\N	\N
+1034	62	MATCH	11	1	1	\N	\N
+1035	28	BRACKETWINNER	\N	\N	\N	5	1
+870	28	BRACKETWINNER	\N	\N	\N	2	5
+1036	28	MATCH	4	3	2	\N	\N
+1039	28	MATCH	7	3	0	\N	\N
+1040	28	MATCH	8	1	2	\N	\N
+1041	28	MATCH	9	1	1	\N	\N
+1038	28	MATCH	6	1	1	\N	\N
+1042	28	MATCH	10	1	2	\N	\N
+1043	28	MATCH	11	2	0	\N	\N
+1045	28	MATCH	13	1	0	\N	\N
+1047	28	MATCH	14	0	1	\N	\N
+1044	28	MATCH	12	0	1	\N	\N
+1018	39	MATCH	16	3	1	\N	\N
+1049	54	MATCH	4	2	1	\N	\N
+1052	54	MATCH	11	2	1	\N	\N
+1055	54	MATCH	17	2	1	\N	\N
+1057	54	MATCH	28	2	2	\N	\N
+1059	54	MATCH	34	1	0	\N	\N
+1054	54	MATCH	16	1	0	\N	\N
+1056	54	MATCH	23	2	1	\N	\N
+1062	54	MATCH	6	0	1	\N	\N
+1064	54	MATCH	13	0	1	\N	\N
+1065	54	MATCH	18	1	0	\N	\N
+1067	54	MATCH	30	2	1	\N	\N
+1068	54	MATCH	24	1	1	\N	\N
+1069	54	MATCH	25	3	0	\N	\N
+1071	54	MATCH	38	0	4	\N	\N
+1072	54	MATCH	39	2	1	\N	\N
+1073	54	MATCH	8	0	3	\N	\N
+1074	54	MATCH	31	1	2	\N	\N
+1075	54	MATCH	32	2	1	\N	\N
+1076	54	MATCH	9	1	1	\N	\N
+1077	54	MATCH	37	3	0	\N	\N
+1078	54	MATCH	15	1	2	\N	\N
+950	40	MATCH	29	2	1	\N	\N
+1051	54	MATCH	10	1	1	\N	\N
+1050	54	MATCH	5	0	2	\N	\N
+1053	54	MATCH	22	1	3	\N	\N
+1058	54	MATCH	29	0	2	\N	\N
+1037	28	MATCH	5	0	2	\N	\N
+979	66	MATCH	10	1	1	\N	\N
+980	66	MATCH	11	2	1	\N	\N
+981	66	MATCH	22	2	0	\N	\N
+982	66	MATCH	16	1	1	\N	\N
+985	66	MATCH	28	1	2	\N	\N
+176	53	MATCH	7	4	0	\N	\N
+983	66	MATCH	17	2	0	\N	\N
+991	66	MATCH	7	2	0	\N	\N
+988	66	MATCH	35	3	0	\N	\N
+990	66	MATCH	6	1	1	\N	\N
+997	66	MATCH	25	2	1	\N	\N
+447	23	MATCH	31	0	0	\N	\N
+1011	66	MATCH	32	2	1	\N	\N
+994	66	MATCH	19	2	1	\N	\N
+968	40	MATCH	15	0	1	\N	\N
+995	66	MATCH	30	2	0	\N	\N
+1016	39	MATCH	11	2	2	\N	\N
+1029	62	BRACKETWINNER	\N	\N	\N	2	5
+1019	39	MATCH	17	2	0	\N	\N
+998	66	MATCH	31	1	2	\N	\N
+1002	66	MATCH	9	1	0	\N	\N
+1003	66	MATCH	15	1	1	\N	\N
+1006	66	MATCH	21	1	2	\N	\N
+1005	66	MATCH	20	1	2	\N	\N
+1008	66	MATCH	26	0	2	\N	\N
+1007	66	MATCH	27	0	2	\N	\N
+1010	66	MATCH	38	0	2	\N	\N
+1012	66	MATCH	33	1	2	\N	\N
+203	32	MATCH	16	1	0	\N	\N
+1046	28	MATCH	15	0	2	\N	\N
+992	66	MATCH	13	1	1	\N	\N
+1060	54	MATCH	35	3	0	\N	\N
+1063	54	MATCH	7	2	1	\N	\N
+955	40	MATCH	7	2	1	\N	\N
+993	66	MATCH	18	0	1	\N	\N
+1066	54	MATCH	19	2	1	\N	\N
+960	40	MATCH	24	0	1	\N	\N
+962	40	MATCH	31	2	1	\N	\N
+963	40	MATCH	36	1	1	\N	\N
+964	40	MATCH	37	2	0	\N	\N
+999	66	MATCH	36	1	2	\N	\N
+974	40	MATCH	38	2	2	\N	\N
+1070	54	MATCH	21	0	1	\N	\N
+1009	66	MATCH	39	0	0	\N	\N
+976	40	MATCH	32	1	0	\N	\N
+1048	28	CHAMPION	\N	\N	\N	24	\N
+1079	54	MATCH	36	0	0	\N	\N
+1080	54	MATCH	14	1	2	\N	\N
+1081	54	MATCH	26	1	1	\N	\N
+1082	54	MATCH	20	0	2	\N	\N
+1083	54	MATCH	27	1	1	\N	\N
+1084	54	MATCH	33	0	1	\N	\N
+1085	54	BRACKETWINNER	\N	\N	\N	5	1
+1086	54	BRACKETWINNER	\N	\N	\N	4	2
+1087	54	BRACKETWINNER	\N	\N	\N	12	3
+1088	54	BRACKETWINNER	\N	\N	\N	19	4
+1089	54	BRACKETWINNER	\N	\N	\N	8	5
+1090	54	BRACKETWINNER	\N	\N	\N	13	6
+1092	47	MATCH	13	2	1	\N	\N
+1093	47	MATCH	18	2	1	\N	\N
+1094	47	MATCH	19	2	1	\N	\N
+1097	47	MATCH	25	2	1	\N	\N
+1098	47	MATCH	31	2	1	\N	\N
+1099	47	MATCH	36	2	1	\N	\N
+1102	47	MATCH	9	2	1	\N	\N
+1104	47	MATCH	15	2	1	\N	\N
+1108	47	MATCH	27	2	1	\N	\N
+1109	47	MATCH	39	2	1	\N	\N
+1121	47	MATCH	48	0	1	\N	\N
+1122	47	MATCH	49	0	1	\N	\N
+1128	60	MATCH	4	2	0	\N	\N
+1129	60	MATCH	5	0	1	\N	\N
+1133	60	MATCH	16	2	0	\N	\N
+1136	60	MATCH	28	0	1	\N	\N
+1138	60	MATCH	34	2	0	\N	\N
+1139	60	MATCH	35	2	0	\N	\N
+1140	52	MATCH	5	1	2	\N	\N
+1141	52	MATCH	10	0	0	\N	\N
+1142	52	MATCH	11	3	1	\N	\N
+1143	52	MATCH	22	1	1	\N	\N
+1144	52	MATCH	16	2	1	\N	\N
+1145	52	MATCH	17	2	0	\N	\N
+1146	52	MATCH	23	2	1	\N	\N
+1147	52	MATCH	28	2	1	\N	\N
+1148	52	MATCH	29	2	2	\N	\N
+1149	52	MATCH	34	3	0	\N	\N
+1150	52	MATCH	35	3	1	\N	\N
+1151	52	MATCH	12	1	1	\N	\N
+1152	52	MATCH	6	1	1	\N	\N
+1153	52	MATCH	7	5	0	\N	\N
+1154	52	MATCH	13	3	0	\N	\N
+1155	52	MATCH	18	1	1	\N	\N
+1156	52	MATCH	19	1	1	\N	\N
+1157	52	MATCH	30	2	1	\N	\N
+1158	52	MATCH	24	2	2	\N	\N
+1159	52	MATCH	25	4	0	\N	\N
+1160	52	MATCH	31	2	1	\N	\N
+1161	52	MATCH	36	2	3	\N	\N
+1162	52	MATCH	37	1	1	\N	\N
+1163	52	MATCH	8	1	3	\N	\N
+1164	52	MATCH	9	2	1	\N	\N
+1165	52	MATCH	14	1	2	\N	\N
+1166	52	MATCH	15	1	0	\N	\N
+1167	52	MATCH	20	0	2	\N	\N
+1168	52	MATCH	21	1	3	\N	\N
+1169	52	MATCH	26	1	2	\N	\N
+1170	52	MATCH	27	2	1	\N	\N
+1171	52	MATCH	39	1	1	\N	\N
+1172	52	MATCH	38	1	2	\N	\N
+1173	52	MATCH	33	0	3	\N	\N
+1174	52	MATCH	32	3	1	\N	\N
+1175	52	BRACKETWINNER	\N	\N	\N	5	1
+1176	52	BRACKETWINNER	\N	\N	\N	4	2
+1177	52	BRACKETWINNER	\N	\N	\N	3	3
+1178	52	BRACKETWINNER	\N	\N	\N	19	4
+1179	52	BRACKETWINNER	\N	\N	\N	2	5
+1180	52	BRACKETWINNER	\N	\N	\N	13	6
+1181	21	MATCH	4	3	0	\N	\N
+1183	21	MATCH	10	2	1	\N	\N
+1184	21	MATCH	11	2	1	\N	\N
+1185	21	MATCH	22	2	2	\N	\N
+1095	47	MATCH	30	1	0	\N	\N
+1188	21	MATCH	23	2	0	\N	\N
+1189	21	MATCH	28	1	2	\N	\N
+1194	21	MATCH	6	1	2	\N	\N
+1195	21	MATCH	7	2	0	\N	\N
+1196	21	MATCH	13	1	1	\N	\N
+1197	21	MATCH	18	1	1	\N	\N
+1198	21	MATCH	19	2	1	\N	\N
+1201	21	MATCH	25	3	1	\N	\N
+1202	21	MATCH	31	2	1	\N	\N
+1204	21	MATCH	37	2	1	\N	\N
+1209	21	MATCH	20	0	2	\N	\N
+1210	21	MATCH	21	0	2	\N	\N
+1211	21	MATCH	27	1	2	\N	\N
+1212	21	MATCH	26	0	2	\N	\N
+1213	21	MATCH	39	0	1	\N	\N
+1214	21	MATCH	38	1	2	\N	\N
+1106	47	MATCH	21	1	2	\N	\N
+1107	47	MATCH	26	1	2	\N	\N
+1112	47	MATCH	32	2	1	\N	\N
+1134	60	MATCH	17	2	0	\N	\N
+1130	60	MATCH	10	0	0	\N	\N
+1132	60	MATCH	22	0	1	\N	\N
+1137	60	MATCH	29	1	0	\N	\N
+1135	60	MATCH	23	2	0	\N	\N
+1182	21	MATCH	5	0	2	\N	\N
+1131	60	MATCH	11	2	0	\N	\N
+1187	21	MATCH	17	2	0	\N	\N
+1186	21	MATCH	16	2	0	\N	\N
+1190	21	MATCH	29	1	0	\N	\N
+1126	47	MATCH	53	7	1	\N	\N
+1127	47	MATCH	54	0	1	\N	\N
+1125	47	MATCH	52	1	0	\N	\N
+1191	21	MATCH	34	1	0	\N	\N
+1192	21	MATCH	35	2	0	\N	\N
+1193	21	MATCH	12	0	1	\N	\N
+1096	47	MATCH	24	1	2	\N	\N
+1100	47	MATCH	37	2	0	\N	\N
+1101	47	MATCH	8	1	0	\N	\N
+1105	47	MATCH	20	1	2	\N	\N
+1111	47	MATCH	33	1	2	\N	\N
+1199	21	MATCH	30	2	1	\N	\N
+1200	21	MATCH	24	0	1	\N	\N
+1203	21	MATCH	36	1	0	\N	\N
+1205	21	MATCH	8	1	2	\N	\N
+1206	21	MATCH	9	1	0	\N	\N
+1207	21	MATCH	15	0	1	\N	\N
+1113	47	MATCH	40	0	1	\N	\N
+1091	54	CHAMPION	\N	\N	\N	13	\N
+1114	47	MATCH	41	1	0	\N	\N
+1116	47	MATCH	43	1	0	\N	\N
+1117	47	MATCH	44	2	0	\N	\N
+1118	47	MATCH	45	0	1	\N	\N
+1119	47	MATCH	46	0	1	\N	\N
+1120	47	MATCH	47	0	1	\N	\N
+1115	47	MATCH	42	2	0	\N	\N
+1123	47	MATCH	50	1	0	\N	\N
+1217	21	BRACKETWINNER	\N	\N	\N	5	1
+1218	21	BRACKETWINNER	\N	\N	\N	4	2
+1219	21	BRACKETWINNER	\N	\N	\N	3	3
+1220	21	BRACKETWINNER	\N	\N	\N	19	4
+1221	21	BRACKETWINNER	\N	\N	\N	8	5
+1222	21	BRACKETWINNER	\N	\N	\N	13	6
+1223	21	CHAMPION	\N	\N	\N	3	\N
+1224	25	BRACKETWINNER	\N	\N	\N	5	1
+1225	25	BRACKETWINNER	\N	\N	\N	4	2
+1226	25	BRACKETWINNER	\N	\N	\N	3	3
+1227	25	BRACKETWINNER	\N	\N	\N	19	4
+1228	25	BRACKETWINNER	\N	\N	\N	2	5
+1229	25	BRACKETWINNER	\N	\N	\N	13	6
+1231	25	MATCH	4	2	0	\N	\N
+1232	25	MATCH	5	1	3	\N	\N
+1233	25	MATCH	10	1	1	\N	\N
+1234	25	MATCH	11	3	2	\N	\N
+1235	25	MATCH	22	0	3	\N	\N
+1240	25	MATCH	29	1	1	\N	\N
+1255	25	MATCH	8	1	1	\N	\N
+1261	25	MATCH	27	2	0	\N	\N
+1265	25	MATCH	32	2	1	\N	\N
+1267	63	MATCH	4	3	1	\N	\N
+1268	63	MATCH	5	0	2	\N	\N
+1269	63	MATCH	10	1	1	\N	\N
+1270	63	MATCH	11	2	0	\N	\N
+1271	63	MATCH	22	0	3	\N	\N
+1272	63	MATCH	16	4	0	\N	\N
+1273	63	MATCH	17	2	0	\N	\N
+1275	63	MATCH	28	1	2	\N	\N
+1276	63	MATCH	29	2	2	\N	\N
+1277	63	BRACKETWINNER	\N	\N	\N	5	1
+1278	63	BRACKETWINNER	\N	\N	\N	4	2
+1279	63	BRACKETWINNER	\N	\N	\N	3	3
+1280	63	BRACKETWINNER	\N	\N	\N	9	4
+1281	63	BRACKETWINNER	\N	\N	\N	2	5
+1282	63	BRACKETWINNER	\N	\N	\N	13	6
+1283	63	CHAMPION	\N	\N	\N	3	\N
+1284	35	MATCH	4	3	1	\N	\N
+1285	35	MATCH	5	1	2	\N	\N
+1286	35	MATCH	10	1	1	\N	\N
+1287	35	MATCH	11	2	1	\N	\N
+1288	35	MATCH	22	1	1	\N	\N
+1289	35	MATCH	16	3	1	\N	\N
+1290	35	MATCH	17	3	1	\N	\N
+1291	35	MATCH	23	2	0	\N	\N
+1292	35	MATCH	28	2	2	\N	\N
+1294	35	MATCH	34	3	1	\N	\N
+1295	35	MATCH	35	2	0	\N	\N
+1297	35	BRACKETWINNER	\N	\N	\N	5	1
+1298	35	BRACKETWINNER	\N	\N	\N	4	2
+1299	35	BRACKETWINNER	\N	\N	\N	3	3
+1300	35	BRACKETWINNER	\N	\N	\N	19	4
+1301	35	BRACKETWINNER	\N	\N	\N	2	5
+1302	35	BRACKETWINNER	\N	\N	\N	13	6
+1303	35	CHAMPION	\N	\N	\N	3	\N
+688	50	BRACKETWINNER	\N	\N	\N	2	5
+1304	56	BRACKETWINNER	\N	\N	\N	5	1
+1305	56	BRACKETWINNER	\N	\N	\N	15	2
+1306	56	BRACKETWINNER	\N	\N	\N	3	3
+1307	56	BRACKETWINNER	\N	\N	\N	19	4
+1308	56	BRACKETWINNER	\N	\N	\N	8	5
+1309	56	BRACKETWINNER	\N	\N	\N	13	6
+1310	56	CHAMPION	\N	\N	\N	3	\N
+1311	29	MATCH	4	2	0	\N	\N
+1312	29	MATCH	5	0	1	\N	\N
+1313	29	MATCH	10	1	2	\N	\N
+1314	29	MATCH	11	3	1	\N	\N
+1315	29	MATCH	22	0	1	\N	\N
+1316	29	MATCH	16	2	0	\N	\N
+1317	29	MATCH	17	3	0	\N	\N
+1318	29	MATCH	23	3	0	\N	\N
+1319	29	MATCH	28	0	2	\N	\N
+1320	29	MATCH	29	1	2	\N	\N
+1321	68	MATCH	4	3	0	\N	\N
+1322	68	MATCH	5	1	3	\N	\N
+1323	68	MATCH	10	1	1	\N	\N
+1324	68	MATCH	11	2	2	\N	\N
+1325	68	MATCH	22	0	3	\N	\N
+1326	68	MATCH	16	2	0	\N	\N
+1327	68	MATCH	17	4	0	\N	\N
+1328	68	MATCH	23	3	1	\N	\N
+1329	68	MATCH	28	0	2	\N	\N
+1330	68	MATCH	29	1	1	\N	\N
+1331	68	MATCH	34	0	0	\N	\N
+1332	68	MATCH	35	3	0	\N	\N
+1333	68	MATCH	12	2	1	\N	\N
+1334	68	MATCH	6	1	3	\N	\N
+1335	68	MATCH	32	2	0	\N	\N
+1336	68	MATCH	7	4	0	\N	\N
+1337	68	MATCH	13	2	1	\N	\N
+1338	68	MATCH	18	2	2	\N	\N
+1339	68	MATCH	19	3	1	\N	\N
+1341	68	MATCH	24	1	2	\N	\N
+1342	68	MATCH	33	2	2	\N	\N
+1344	68	MATCH	31	2	0	\N	\N
+1347	68	MATCH	8	1	3	\N	\N
+1348	68	MATCH	9	0	0	\N	\N
+1349	68	MATCH	14	1	1	\N	\N
+1258	25	MATCH	14	0	2	\N	\N
+1236	25	MATCH	16	3	0	\N	\N
+1238	25	MATCH	23	2	1	\N	\N
+1249	25	MATCH	30	1	0	\N	\N
+1239	25	MATCH	28	0	3	\N	\N
+1274	63	MATCH	23	3	2	\N	\N
+1216	21	MATCH	33	1	2	\N	\N
+1293	35	MATCH	29	2	1	\N	\N
+1241	25	MATCH	34	1	1	\N	\N
+1252	25	MATCH	31	2	0	\N	\N
+1260	25	MATCH	21	0	3	\N	\N
+1257	25	MATCH	15	0	1	\N	\N
+1266	25	MATCH	33	0	3	\N	\N
+1296	35	MATCH	12	2	1	\N	\N
+1242	25	MATCH	35	1	1	\N	\N
+1263	25	MATCH	39	1	1	\N	\N
+1245	25	MATCH	7	3	0	\N	\N
+1244	25	MATCH	6	1	1	\N	\N
+1254	25	MATCH	37	2	0	\N	\N
+1246	25	MATCH	13	2	2	\N	\N
+1251	25	MATCH	25	2	0	\N	\N
+1248	25	MATCH	19	1	1	\N	\N
+1243	25	MATCH	12	0	0	\N	\N
+1247	25	MATCH	18	1	0	\N	\N
+1340	68	MATCH	30	2	1	\N	\N
+1345	68	MATCH	36	1	1	\N	\N
+1346	68	MATCH	37	2	0	\N	\N
+1250	25	MATCH	24	1	2	\N	\N
+1253	25	MATCH	36	1	0	\N	\N
+1259	25	MATCH	20	0	2	\N	\N
+1262	25	MATCH	26	1	1	\N	\N
+1264	25	MATCH	38	1	1	\N	\N
+1230	25	CHAMPION	\N	\N	\N	9	\N
+1215	21	MATCH	32	1	0	\N	\N
+1351	68	MATCH	20	1	2	\N	\N
+1353	68	MATCH	26	1	2	\N	\N
+1354	68	MATCH	27	1	1	\N	\N
+1356	68	MATCH	38	1	2	\N	\N
+1357	68	BRACKETWINNER	\N	\N	\N	5	1
+1358	68	BRACKETWINNER	\N	\N	\N	4	2
+1359	68	BRACKETWINNER	\N	\N	\N	3	3
+1361	68	BRACKETWINNER	\N	\N	\N	2	5
+1360	68	BRACKETWINNER	\N	\N	\N	19	4
+1362	68	BRACKETWINNER	\N	\N	\N	13	6
+1364	55	BRACKETWINNER	\N	\N	\N	5	1
+1365	55	BRACKETWINNER	\N	\N	\N	4	2
+1366	55	BRACKETWINNER	\N	\N	\N	3	3
+1367	55	BRACKETWINNER	\N	\N	\N	19	4
+1368	55	BRACKETWINNER	\N	\N	\N	2	5
+1369	55	BRACKETWINNER	\N	\N	\N	13	6
+1371	51	MATCH	4	2	1	\N	\N
+1372	51	MATCH	5	0	2	\N	\N
+1373	51	MATCH	10	1	1	\N	\N
+1374	51	MATCH	11	1	0	\N	\N
+1375	51	MATCH	22	3	1	\N	\N
+1378	51	MATCH	23	3	0	\N	\N
+1379	51	MATCH	28	1	0	\N	\N
+1380	51	MATCH	29	2	1	\N	\N
+1381	51	BRACKETWINNER	\N	\N	\N	5	1
+1382	51	BRACKETWINNER	\N	\N	\N	4	2
+1383	51	BRACKETWINNER	\N	\N	\N	3	3
+1384	51	BRACKETWINNER	\N	\N	\N	19	4
+1385	51	BRACKETWINNER	\N	\N	\N	2	5
+1386	51	BRACKETWINNER	\N	\N	\N	13	6
+1387	67	MATCH	4	3	0	\N	\N
+1388	67	MATCH	5	1	3	\N	\N
+1389	67	MATCH	10	1	0	\N	\N
+1390	67	MATCH	11	2	0	\N	\N
+1391	67	MATCH	22	1	2	\N	\N
+1392	67	MATCH	16	1	0	\N	\N
+1393	67	MATCH	17	2	0	\N	\N
+1394	67	MATCH	23	4	0	\N	\N
+1395	67	MATCH	28	0	1	\N	\N
+1396	67	MATCH	29	1	1	\N	\N
+1397	67	MATCH	34	2	0	\N	\N
+1398	67	MATCH	35	3	1	\N	\N
+1399	67	MATCH	12	1	0	\N	\N
+1400	67	MATCH	6	0	2	\N	\N
+1401	67	MATCH	7	3	0	\N	\N
+1402	67	MATCH	13	1	1	\N	\N
+1403	67	MATCH	18	0	0	\N	\N
+1404	67	MATCH	19	2	0	\N	\N
+1405	67	MATCH	30	2	1	\N	\N
+1406	67	MATCH	24	0	2	\N	\N
+1407	67	MATCH	25	4	1	\N	\N
+1408	67	MATCH	31	2	0	\N	\N
+1409	67	MATCH	36	2	0	\N	\N
+1410	67	MATCH	37	2	1	\N	\N
+1411	67	MATCH	8	1	1	\N	\N
+1412	67	MATCH	9	1	0	\N	\N
+1413	67	MATCH	14	0	2	\N	\N
+1414	67	MATCH	15	1	1	\N	\N
+1415	67	MATCH	20	1	2	\N	\N
+1416	67	MATCH	21	0	1	\N	\N
+1417	67	MATCH	26	1	1	\N	\N
+1419	67	MATCH	39	1	2	\N	\N
+1421	67	MATCH	33	1	2	\N	\N
+1422	67	MATCH	32	1	0	\N	\N
+1423	34	MATCH	4	2	0	\N	\N
+1424	34	MATCH	5	0	1	\N	\N
+1425	34	MATCH	10	1	2	\N	\N
+1426	34	MATCH	11	3	1	\N	\N
+1427	34	MATCH	22	0	1	\N	\N
+1428	34	MATCH	16	0	0	\N	\N
+1429	34	MATCH	17	2	1	\N	\N
+1430	34	MATCH	23	2	1	\N	\N
+1431	34	MATCH	28	1	2	\N	\N
+1432	34	MATCH	29	1	2	\N	\N
+1433	34	MATCH	34	2	1	\N	\N
+1435	34	MATCH	12	2	1	\N	\N
+1437	35	MATCH	6	1	1	\N	\N
+1445	35	MATCH	31	2	1	\N	\N
+1447	35	MATCH	37	3	2	\N	\N
+1452	35	MATCH	20	1	1	\N	\N
+1456	35	MATCH	39	2	2	\N	\N
+1457	35	MATCH	38	1	0	\N	\N
+1458	35	MATCH	32	3	0	\N	\N
+1459	35	MATCH	33	2	3	\N	\N
+1438	35	MATCH	7	4	1	\N	\N
+1434	34	MATCH	35	2	0	\N	\N
+1439	35	MATCH	13	1	1	\N	\N
+1444	35	MATCH	25	1	0	\N	\N
+1442	35	MATCH	30	2	2	\N	\N
+1443	35	MATCH	24	2	2	\N	\N
+1451	35	MATCH	14	1	2	\N	\N
+1446	35	MATCH	36	1	1	\N	\N
+292	30	MATCH	4	2	1	\N	\N
+1465	42	MATCH	22	2	1	\N	\N
+1470	42	BRACKETWINNER	\N	\N	\N	3	3
+1462	42	MATCH	5	1	2	\N	\N
+1463	42	MATCH	10	0	0	\N	\N
+1464	42	MATCH	11	3	1	\N	\N
+1466	42	MATCH	16	2	0	\N	\N
+1474	42	MATCH	23	3	0	\N	\N
+1467	42	MATCH	17	3	1	\N	\N
+1475	42	MATCH	28	2	1	\N	\N
+1476	42	MATCH	29	0	3	\N	\N
+1477	42	MATCH	34	0	0	\N	\N
+1478	42	MATCH	35	3	0	\N	\N
+1479	42	MATCH	12	1	1	\N	\N
+1480	42	MATCH	6	2	1	\N	\N
+1483	42	MATCH	18	0	1	\N	\N
+1441	35	MATCH	19	3	1	\N	\N
+1468	42	BRACKETWINNER	\N	\N	\N	5	1
+1469	42	BRACKETWINNER	\N	\N	\N	4	2
+1471	42	BRACKETWINNER	\N	\N	\N	19	4
+1472	42	BRACKETWINNER	\N	\N	\N	8	5
+1473	42	BRACKETWINNER	\N	\N	\N	13	6
+1377	51	MATCH	17	1	1	\N	\N
+1376	51	MATCH	16	1	2	\N	\N
+1482	42	MATCH	13	1	1	\N	\N
+1350	68	MATCH	15	1	1	\N	\N
+1448	35	MATCH	8	2	2	\N	\N
+1449	35	MATCH	9	2	1	\N	\N
+1450	35	MATCH	15	1	2	\N	\N
+1454	35	MATCH	27	0	1	\N	\N
+1455	35	MATCH	26	2	2	\N	\N
+1436	34	MATCH	6	1	2	\N	\N
+1460	34	MATCH	7	2	1	\N	\N
+1440	35	MATCH	18	2	1	\N	\N
+1355	68	MATCH	39	1	0	\N	\N
+1352	68	MATCH	21	0	2	\N	\N
+1418	67	MATCH	27	1	1	\N	\N
+1420	67	MATCH	38	0	2	\N	\N
+1363	68	CHAMPION	\N	\N	\N	8	\N
+1370	55	CHAMPION	\N	\N	\N	19	\N
+1503	42	MATCH	40	3	0	\N	\N
+1504	42	MATCH	41	2	1	\N	\N
+1505	42	MATCH	42	0	3	\N	\N
+1509	42	MATCH	46	2	1	\N	\N
+1511	42	MATCH	48	3	0	\N	\N
+1512	42	MATCH	49	0	3	\N	\N
+1513	42	MATCH	50	2	1	\N	\N
+1514	42	MATCH	51	2	0	\N	\N
+1517	42	MATCH	54	0	2	\N	\N
+1461	42	MATCH	4	3	1	\N	\N
+1481	42	MATCH	7	3	0	\N	\N
+1580	45	MATCH	23	2	0	\N	\N
+1486	42	MATCH	24	0	1	\N	\N
+1518	43	MATCH	4	3	1	\N	\N
+1519	43	MATCH	5	1	1	\N	\N
+1520	43	MATCH	10	1	2	\N	\N
+1521	43	MATCH	11	3	2	\N	\N
+1522	43	MATCH	22	1	1	\N	\N
+1523	43	MATCH	16	2	0	\N	\N
+1524	43	MATCH	17	2	1	\N	\N
+1525	43	MATCH	23	2	1	\N	\N
+1526	41	MATCH	4	3	1	\N	\N
+1528	29	CHAMPION	\N	\N	\N	5	\N
+1530	29	BRACKETWINNER	\N	\N	\N	3	3
+1531	29	BRACKETWINNER	\N	\N	\N	19	4
+1533	29	BRACKETWINNER	\N	\N	\N	13	6
+1534	64	BRACKETWINNER	\N	\N	\N	5	1
+1535	64	BRACKETWINNER	\N	\N	\N	4	2
+1536	64	BRACKETWINNER	\N	\N	\N	3	3
+1537	64	BRACKETWINNER	\N	\N	\N	19	4
+1538	64	BRACKETWINNER	\N	\N	\N	8	5
+1539	64	BRACKETWINNER	\N	\N	\N	13	6
+1527	29	BRACKETWINNER	\N	\N	\N	5	1
+1529	29	BRACKETWINNER	\N	\N	\N	4	2
+1532	29	BRACKETWINNER	\N	\N	\N	8	5
+1555	29	MATCH	9	0	1	\N	\N
+1566	65	BRACKETWINNER	\N	\N	\N	5	1
+1567	65	BRACKETWINNER	\N	\N	\N	4	2
+1540	29	MATCH	34	1	1	\N	\N
+1568	65	BRACKETWINNER	\N	\N	\N	3	3
+1542	29	MATCH	12	0	1	\N	\N
+1569	65	BRACKETWINNER	\N	\N	\N	19	4
+1543	29	MATCH	6	0	2	\N	\N
+1570	65	BRACKETWINNER	\N	\N	\N	16	5
+1545	29	MATCH	13	2	0	\N	\N
+1571	65	BRACKETWINNER	\N	\N	\N	13	6
+1544	29	MATCH	7	2	0	\N	\N
+1548	29	MATCH	30	1	0	\N	\N
+1572	65	CHAMPION	\N	\N	\N	3	\N
+1546	29	MATCH	18	2	0	\N	\N
+1547	29	MATCH	19	2	0	\N	\N
+1549	29	MATCH	24	0	2	\N	\N
+1551	29	MATCH	31	1	0	\N	\N
+1550	29	MATCH	25	2	0	\N	\N
+1581	45	MATCH	28	1	1	\N	\N
+1552	29	MATCH	36	0	2	\N	\N
+1553	29	MATCH	37	3	0	\N	\N
+1554	29	MATCH	8	0	1	\N	\N
+1557	29	MATCH	14	0	1	\N	\N
+1563	29	MATCH	38	0	1	\N	\N
+1596	45	MATCH	37	2	2	\N	\N
+1565	29	MATCH	33	0	1	\N	\N
+1564	29	MATCH	32	2	0	\N	\N
+1573	45	MATCH	4	1	2	\N	\N
+1589	45	MATCH	18	1	3	\N	\N
+1592	45	MATCH	24	0	2	\N	\N
+1595	45	MATCH	36	1	1	\N	\N
+1607	45	MATCH	33	0	1	\N	\N
+1613	45	MATCH	44	3	1	\N	\N
+1575	45	MATCH	10	0	2	\N	\N
+1576	45	MATCH	11	2	2	\N	\N
+1577	45	MATCH	22	1	1	\N	\N
+1578	45	MATCH	16	2	3	\N	\N
+1579	45	MATCH	17	4	1	\N	\N
+1582	45	MATCH	29	2	1	\N	\N
+1584	45	MATCH	35	1	1	\N	\N
+1583	45	MATCH	34	1	0	\N	\N
+1585	45	MATCH	12	1	0	\N	\N
+1586	45	MATCH	6	1	3	\N	\N
+1587	45	MATCH	7	3	0	\N	\N
+1588	45	MATCH	13	2	0	\N	\N
+1590	45	MATCH	19	3	1	\N	\N
+1593	45	MATCH	25	3	0	\N	\N
+1594	45	MATCH	31	1	0	\N	\N
+1597	45	MATCH	8	1	2	\N	\N
+1598	45	MATCH	9	2	0	\N	\N
+1599	45	MATCH	14	1	2	\N	\N
+1600	45	MATCH	15	2	0	\N	\N
+1601	45	MATCH	20	0	1	\N	\N
+1602	45	MATCH	21	0	2	\N	\N
+1615	45	MATCH	46	1	4	\N	\N
+1608	45	MATCH	32	2	1	\N	\N
+1541	29	MATCH	35	2	0	\N	\N
+1559	29	MATCH	21	0	1	\N	\N
+1558	29	MATCH	20	0	1	\N	\N
+1484	42	MATCH	19	2	1	\N	\N
+1487	42	MATCH	25	3	0	\N	\N
+1488	42	MATCH	31	2	0	\N	\N
+1490	42	MATCH	37	2	0	\N	\N
+1489	42	MATCH	36	1	1	\N	\N
+1491	42	MATCH	8	0	2	\N	\N
+1492	42	MATCH	9	1	0	\N	\N
+1493	42	MATCH	14	0	2	\N	\N
+1494	42	MATCH	15	1	2	\N	\N
+1496	42	MATCH	21	0	2	\N	\N
+1495	42	MATCH	20	0	2	\N	\N
+1497	42	MATCH	26	1	2	\N	\N
+1498	42	MATCH	27	1	0	\N	\N
+1499	42	MATCH	39	1	0	\N	\N
+1500	42	MATCH	38	1	2	\N	\N
+1501	42	MATCH	33	0	1	\N	\N
+1562	29	MATCH	39	2	0	\N	\N
+1605	45	MATCH	39	0	2	\N	\N
+1556	29	MATCH	15	0	1	\N	\N
+1561	29	MATCH	26	0	2	\N	\N
+1603	45	MATCH	26	2	1	\N	\N
+1560	29	MATCH	27	1	0	\N	\N
+1604	45	MATCH	27	2	1	\N	\N
+1606	45	MATCH	38	2	1	\N	\N
+1610	45	MATCH	41	5	4	\N	\N
+1611	45	MATCH	42	3	1	\N	\N
+1612	45	MATCH	43	2	0	\N	\N
+1507	42	MATCH	44	2	0	\N	\N
+1609	45	MATCH	40	1	2	\N	\N
+1508	42	MATCH	45	0	2	\N	\N
+1510	42	MATCH	47	2	0	\N	\N
+1506	42	MATCH	43	1	0	\N	\N
+1515	42	MATCH	52	1	2	\N	\N
+1516	42	MATCH	53	3	2	\N	\N
+1616	45	MATCH	47	3	0	\N	\N
+1617	45	MATCH	48	2	1	\N	\N
+1621	45	MATCH	52	1	2	\N	\N
+1622	45	MATCH	53	1	0	\N	\N
+1623	45	MATCH	54	3	1	\N	\N
+1624	23	BRACKETWINNER	\N	\N	\N	5	1
+1625	23	BRACKETWINNER	\N	\N	\N	24	2
+1626	23	BRACKETWINNER	\N	\N	\N	3	3
+1627	23	BRACKETWINNER	\N	\N	\N	19	4
+1628	23	BRACKETWINNER	\N	\N	\N	8	5
+1629	66	BRACKETWINNER	\N	\N	\N	5	1
+1630	23	BRACKETWINNER	\N	\N	\N	13	6
+1631	23	CHAMPION	\N	\N	\N	3	\N
+1632	66	BRACKETWINNER	\N	\N	\N	4	2
+1635	66	BRACKETWINNER	\N	\N	\N	8	5
+1637	66	CHAMPION	\N	\N	\N	3	\N
+1574	45	MATCH	5	1	3	\N	\N
+1638	64	CHAMPION	\N	\N	\N	3	\N
+1103	47	MATCH	14	1	2	\N	\N
+1110	47	MATCH	38	1	2	\N	\N
+19	46	MATCH	5	1	2	\N	\N
+33	46	MATCH	7	2	1	\N	\N
+1639	25	MATCH	40	1	2	\N	\N
+1646	25	MATCH	47	2	1	\N	\N
+1650	25	MATCH	51	2	1	\N	\N
+1591	45	MATCH	30	2	1	\N	\N
+1654	41	MATCH	5	0	1	\N	\N
+1655	41	MATCH	10	1	1	\N	\N
+1656	41	MATCH	11	2	1	\N	\N
+1015	39	MATCH	10	1	2	\N	\N
+1659	39	CHAMPION	\N	\N	\N	3	\N
+1664	39	MATCH	35	1	0	\N	\N
+1665	32	BRACKETWINNER	\N	\N	\N	4	2
+1666	32	BRACKETWINNER	\N	\N	\N	3	3
+1667	32	BRACKETWINNER	\N	\N	\N	19	4
+1668	32	BRACKETWINNER	\N	\N	\N	8	5
+1669	32	BRACKETWINNER	\N	\N	\N	13	6
+1670	32	CHAMPION	\N	\N	\N	3	\N
+1671	37	BRACKETWINNER	\N	\N	\N	4	2
+1672	37	BRACKETWINNER	\N	\N	\N	12	3
+1673	37	BRACKETWINNER	\N	\N	\N	9	4
+1674	37	BRACKETWINNER	\N	\N	\N	2	5
+1675	37	BRACKETWINNER	\N	\N	\N	13	6
+1676	37	CHAMPION	\N	\N	\N	2	\N
+1677	43	BRACKETWINNER	\N	\N	\N	4	2
+1678	43	BRACKETWINNER	\N	\N	\N	3	3
+1679	43	BRACKETWINNER	\N	\N	\N	19	4
+1680	43	BRACKETWINNER	\N	\N	\N	2	5
+984	66	MATCH	23	2	0	\N	\N
+1683	46	CHAMPION	\N	\N	\N	3	\N
+1684	62	MATCH	22	1	0	\N	\N
+1685	62	MATCH	16	1	0	\N	\N
+1686	62	MATCH	17	2	0	\N	\N
+1687	62	MATCH	23	2	0	\N	\N
+1688	58	MATCH	23	2	1	\N	\N
+1725	58	MATCH	48	2	0	\N	\N
+1689	58	MATCH	28	1	1	\N	\N
+1690	58	MATCH	29	1	1	\N	\N
+1692	58	MATCH	35	3	1	\N	\N
+1694	58	MATCH	6	1	1	\N	\N
+1693	58	MATCH	12	2	0	\N	\N
+1695	58	MATCH	7	2	0	\N	\N
+1696	58	MATCH	13	2	1	\N	\N
+1697	58	MATCH	18	1	1	\N	\N
+1702	58	MATCH	31	1	0	\N	\N
+1701	58	MATCH	25	2	1	\N	\N
+1703	58	MATCH	36	1	1	\N	\N
+1704	58	MATCH	37	2	1	\N	\N
+1705	58	MATCH	9	1	0	\N	\N
+1732	62	MATCH	28	1	0	\N	\N
+1733	62	MATCH	29	1	0	\N	\N
+1734	24	MATCH	23	1	0	\N	\N
+1709	58	MATCH	20	1	2	\N	\N
+1736	24	MATCH	29	1	1	\N	\N
+1707	58	MATCH	15	2	1	\N	\N
+501	55	MATCH	8	1	2	\N	\N
+1237	25	MATCH	17	2	0	\N	\N
+1740	40	MATCH	48	2	1	\N	\N
+1741	40	MATCH	49	3	1	\N	\N
+1634	66	BRACKETWINNER	\N	\N	\N	19	4
+1636	66	BRACKETWINNER	\N	\N	\N	13	6
+1662	39	MATCH	29	2	1	\N	\N
+1661	39	MATCH	28	0	1	\N	\N
+1658	39	BRACKETWINNER	\N	\N	\N	11	6
+1660	39	MATCH	23	2	1	\N	\N
+1682	43	CHAMPION	\N	\N	\N	3	\N
+1681	43	BRACKETWINNER	\N	\N	\N	13	6
+1691	58	MATCH	34	2	1	\N	\N
+1698	58	MATCH	19	1	2	\N	\N
+1700	58	MATCH	24	1	3	\N	\N
+1708	58	MATCH	14	1	2	\N	\N
+1711	58	MATCH	27	1	1	\N	\N
+1712	58	MATCH	26	1	1	\N	\N
+1710	58	MATCH	21	1	2	\N	\N
+1713	58	MATCH	38	1	1	\N	\N
+1716	58	MATCH	33	1	2	\N	\N
+1640	25	MATCH	41	1	0	\N	\N
+1715	58	MATCH	32	2	1	\N	\N
+1735	24	MATCH	28	1	2	\N	\N
+1663	39	MATCH	34	1	0	\N	\N
+1699	58	MATCH	30	2	1	\N	\N
+1706	58	MATCH	8	2	2	\N	\N
+1641	25	MATCH	42	2	1	\N	\N
+1642	25	MATCH	43	2	1	\N	\N
+1643	25	MATCH	44	2	0	\N	\N
+1644	25	MATCH	45	0	1	\N	\N
+1723	58	MATCH	46	0	1	\N	\N
+1719	58	MATCH	42	2	1	\N	\N
+1717	58	MATCH	40	2	1	\N	\N
+1721	58	MATCH	44	3	1	\N	\N
+1722	58	MATCH	45	2	1	\N	\N
+1645	25	MATCH	46	0	1	\N	\N
+1724	58	MATCH	47	2	1	\N	\N
+1651	25	MATCH	52	1	2	\N	\N
+1718	58	MATCH	41	2	0	\N	\N
+1647	25	MATCH	48	1	2	\N	\N
+1727	58	MATCH	50	2	0	\N	\N
+1728	58	MATCH	51	1	2	\N	\N
+1618	45	MATCH	49	1	3	\N	\N
+1619	45	MATCH	50	2	1	\N	\N
+1620	45	MATCH	51	1	2	\N	\N
+1648	25	MATCH	49	0	2	\N	\N
+1737	40	MATCH	52	2	1	\N	\N
+1726	58	MATCH	49	0	2	\N	\N
+1730	58	MATCH	53	1	3	\N	\N
+1729	58	MATCH	52	1	2	\N	\N
+1738	40	MATCH	53	2	1	\N	\N
+1652	25	MATCH	53	3	1	\N	\N
+1739	40	MATCH	54	0	2	\N	\N
+1653	25	MATCH	54	1	2	\N	\N
+1731	58	MATCH	54	0	2	\N	\N
+1744	40	MATCH	40	0	3	\N	\N
+1745	40	MATCH	41	3	0	\N	\N
+1746	40	MATCH	42	3	1	\N	\N
+1748	40	MATCH	44	2	0	\N	\N
+1749	40	MATCH	45	0	1	\N	\N
+1750	40	MATCH	46	1	3	\N	\N
+1752	41	MATCH	22	1	2	\N	\N
+1753	41	MATCH	17	3	1	\N	\N
+1754	41	MATCH	16	0	2	\N	\N
+1633	66	BRACKETWINNER	\N	\N	\N	3	3
+987	66	MATCH	34	2	1	\N	\N
+1755	56	MATCH	19	2	1	\N	\N
+1756	56	MATCH	30	3	2	\N	\N
+1757	56	MATCH	24	3	1	\N	\N
+1758	56	MATCH	25	2	0	\N	\N
+1760	56	MATCH	36	1	2	\N	\N
+1761	56	MATCH	37	3	0	\N	\N
+1762	56	MATCH	8	0	2	\N	\N
+1763	56	MATCH	9	2	0	\N	\N
+1764	56	MATCH	15	1	1	\N	\N
+1765	56	MATCH	14	2	1	\N	\N
+1766	56	MATCH	21	1	3	\N	\N
+1767	56	MATCH	20	1	2	\N	\N
+1768	56	MATCH	27	2	0	\N	\N
+1769	56	MATCH	26	0	3	\N	\N
+1770	56	MATCH	38	0	1	\N	\N
+1771	56	MATCH	39	1	2	\N	\N
+1772	56	MATCH	33	1	1	\N	\N
+1773	56	MATCH	32	3	0	\N	\N
+1657	39	BRACKETWINNER	\N	\N	\N	16	5
+1774	28	MATCH	16	1	0	\N	\N
+1775	28	MATCH	17	2	1	\N	\N
+1776	28	MATCH	23	1	0	\N	\N
+1777	28	MATCH	28	1	0	\N	\N
+1778	28	MATCH	29	2	1	\N	\N
+1779	28	MATCH	21	0	2	\N	\N
+1781	28	MATCH	19	3	0	\N	\N
+1782	28	MATCH	18	1	0	\N	\N
+1783	28	MATCH	34	1	0	\N	\N
+1784	28	MATCH	35	2	2	\N	\N
+1786	28	MATCH	25	2	0	\N	\N
+205	32	MATCH	23	2	0	\N	\N
+1787	41	MATCH	23	1	0	\N	\N
+1788	41	MATCH	28	1	1	\N	\N
+1789	41	MATCH	29	1	2	\N	\N
+1790	51	MATCH	34	2	0	\N	\N
+1791	51	MATCH	35	3	0	\N	\N
+1792	51	MATCH	12	1	0	\N	\N
+1793	51	MATCH	6	1	1	\N	\N
+1794	51	MATCH	7	2	0	\N	\N
+1795	51	MATCH	13	0	1	\N	\N
+1796	39	MATCH	12	2	2	\N	\N
+1797	39	MATCH	6	0	2	\N	\N
+357	47	MATCH	35	2	0	\N	\N
+485	55	MATCH	28	0	2	\N	\N
+808	36	MATCH	12	2	0	\N	\N
+1808	66	MATCH	41	1	0	\N	\N
+1812	66	MATCH	45	0	2	\N	\N
+1813	66	MATCH	46	2	1	\N	\N
+1815	51	MATCH	18	1	0	\N	\N
+1816	51	MATCH	19	2	1	\N	\N
+1817	24	MATCH	34	1	1	\N	\N
+1806	39	MATCH	25	2	0	\N	\N
+1819	24	MATCH	12	2	1	\N	\N
+1820	24	MATCH	6	1	1	\N	\N
+1821	24	MATCH	7	2	0	\N	\N
+1822	44	MATCH	12	1	0	\N	\N
+1823	61	MATCH	23	3	1	\N	\N
+1824	61	MATCH	28	1	1	\N	\N
+1825	61	MATCH	29	2	1	\N	\N
+1828	43	MATCH	28	0	2	\N	\N
+1829	43	MATCH	29	1	1	\N	\N
+1830	43	MATCH	34	1	0	\N	\N
+1831	43	MATCH	35	4	0	\N	\N
+1832	43	MATCH	12	1	2	\N	\N
+1833	43	MATCH	6	1	0	\N	\N
+1834	43	MATCH	7	2	1	\N	\N
+1835	43	MATCH	13	2	1	\N	\N
+1836	43	MATCH	18	1	0	\N	\N
+1837	43	MATCH	19	1	0	\N	\N
+1838	43	MATCH	30	1	0	\N	\N
+1839	43	MATCH	24	1	2	\N	\N
+1840	43	MATCH	25	2	0	\N	\N
+1841	57	MATCH	23	2	1	\N	\N
+1842	57	MATCH	28	0	1	\N	\N
+1843	57	MATCH	29	2	2	\N	\N
+1844	57	MATCH	34	1	0	\N	\N
+1845	57	MATCH	35	2	0	\N	\N
+1852	57	MATCH	30	0	1	\N	\N
+1854	57	MATCH	25	1	0	\N	\N
+1860	57	MATCH	15	0	2	\N	\N
+1862	57	MATCH	20	0	2	\N	\N
+1865	57	MATCH	27	0	1	\N	\N
+1866	57	MATCH	39	0	2	\N	\N
+1869	57	MATCH	33	1	2	\N	\N
+1826	61	MATCH	34	2	1	\N	\N
+1827	61	MATCH	35	3	1	\N	\N
+1818	24	MATCH	35	2	1	\N	\N
+1785	28	MATCH	30	1	1	\N	\N
+1846	57	MATCH	12	1	1	\N	\N
+1848	57	MATCH	7	3	0	\N	\N
+1849	57	MATCH	13	1	1	\N	\N
+1798	39	MATCH	13	2	1	\N	\N
+1800	39	MATCH	18	1	0	\N	\N
+1801	39	MATCH	19	3	2	\N	\N
+1799	39	MATCH	7	3	1	\N	\N
+1850	57	MATCH	18	2	1	\N	\N
+1851	57	MATCH	19	3	1	\N	\N
+1853	57	MATCH	24	1	2	\N	\N
+1856	57	MATCH	36	1	1	\N	\N
+1859	57	MATCH	8	1	2	\N	\N
+1857	57	MATCH	37	1	2	\N	\N
+1858	57	MATCH	9	0	0	\N	\N
+1863	57	MATCH	21	0	4	\N	\N
+1861	57	MATCH	14	2	3	\N	\N
+1864	57	MATCH	26	1	1	\N	\N
+1867	57	MATCH	38	0	3	\N	\N
+1868	57	MATCH	32	1	0	\N	\N
+1804	39	MATCH	30	1	2	\N	\N
+1805	39	MATCH	24	2	1	\N	\N
+1759	56	MATCH	31	2	1	\N	\N
+1802	39	MATCH	21	0	2	\N	\N
+1814	66	MATCH	47	0	1	\N	\N
+1807	66	MATCH	40	1	2	\N	\N
+1809	66	MATCH	42	1	2	\N	\N
+1811	66	MATCH	44	2	1	\N	\N
+1810	66	MATCH	43	2	1	\N	\N
+1870	57	MATCH	40	3	4	\N	\N
+1747	40	MATCH	43	1	0	\N	\N
+1751	40	MATCH	47	0	2	\N	\N
+1743	40	MATCH	51	2	0	\N	\N
+1742	40	MATCH	50	2	0	\N	\N
+1880	57	MATCH	50	2	1	\N	\N
+1885	67	CHAMPION	\N	\N	\N	19	\N
+1886	63	MATCH	34	1	2	\N	\N
+1887	63	MATCH	35	3	0	\N	\N
+1888	63	MATCH	12	1	0	\N	\N
+1889	63	MATCH	6	2	2	\N	\N
+1890	63	MATCH	7	3	1	\N	\N
+1892	67	BRACKETWINNER	\N	\N	\N	13	6
+1891	67	BRACKETWINNER	\N	\N	\N	8	5
+1893	41	BRACKETWINNER	\N	\N	\N	8	5
+1894	41	BRACKETWINNER	\N	\N	\N	13	6
+1895	27	MATCH	12	2	1	\N	\N
+1896	27	MATCH	6	0	1	\N	\N
+1898	27	MATCH	13	2	0	\N	\N
+1899	27	MATCH	18	0	1	\N	\N
+986	66	MATCH	29	1	2	\N	\N
+1900	64	MATCH	28	1	1	\N	\N
+1901	64	MATCH	29	1	2	\N	\N
+554	31	MATCH	38	1	2	\N	\N
+1124	47	MATCH	51	1	2	\N	\N
+1902	62	MATCH	34	1	0	\N	\N
+1903	62	MATCH	35	2	0	\N	\N
+1904	62	MATCH	12	1	1	\N	\N
+1905	62	MATCH	6	1	1	\N	\N
+1906	62	MATCH	7	3	0	\N	\N
+1907	62	MATCH	13	2	1	\N	\N
+1908	62	MATCH	18	1	0	\N	\N
+1909	62	MATCH	19	1	0	\N	\N
+222	32	MATCH	8	1	2	\N	\N
+1910	41	MATCH	34	1	0	\N	\N
+1911	41	MATCH	35	2	0	\N	\N
+1256	25	MATCH	9	1	1	\N	\N
+1912	27	MATCH	19	2	1	\N	\N
+1803	39	MATCH	20	0	2	\N	\N
+1918	61	MATCH	12	2	1	\N	\N
+1919	24	MATCH	13	1	1	\N	\N
+1920	24	MATCH	18	0	1	\N	\N
+1921	24	MATCH	19	2	1	\N	\N
+1922	61	MATCH	6	1	1	\N	\N
+1923	61	MATCH	7	2	0	\N	\N
+1925	61	MATCH	18	1	0	\N	\N
+1927	61	MATCH	30	3	1	\N	\N
+1928	61	MATCH	24	0	1	\N	\N
+1929	61	MATCH	25	2	0	\N	\N
+1930	64	MATCH	34	1	1	\N	\N
+1931	64	MATCH	35	2	0	\N	\N
+1932	64	MATCH	12	1	1	\N	\N
+1933	64	MATCH	6	0	0	\N	\N
+1934	64	MATCH	7	1	0	\N	\N
+1935	64	MATCH	13	1	0	\N	\N
+1936	64	MATCH	18	1	1	\N	\N
+1937	64	MATCH	19	2	0	\N	\N
+1938	64	MATCH	30	1	0	\N	\N
+1939	64	MATCH	24	0	0	\N	\N
+1940	64	MATCH	25	2	0	\N	\N
+1941	64	MATCH	31	1	1	\N	\N
+1942	64	MATCH	36	0	0	\N	\N
+1943	64	MATCH	37	1	0	\N	\N
+1944	64	MATCH	8	0	1	\N	\N
+1945	64	MATCH	9	0	0	\N	\N
+1946	64	MATCH	15	1	1	\N	\N
+1947	64	MATCH	14	0	1	\N	\N
+1948	64	MATCH	20	1	1	\N	\N
+1949	64	MATCH	21	0	2	\N	\N
+1951	64	MATCH	26	0	1	\N	\N
+1952	64	MATCH	39	0	0	\N	\N
+1953	64	MATCH	38	0	1	\N	\N
+1954	64	MATCH	33	1	1	\N	\N
+1955	64	MATCH	32	1	0	\N	\N
+1453	35	MATCH	21	1	2	\N	\N
+1956	41	MATCH	12	1	1	\N	\N
+1957	41	MATCH	6	0	1	\N	\N
+1958	41	MATCH	7	3	0	\N	\N
+1959	60	MATCH	12	1	0	\N	\N
+1960	60	MATCH	6	1	2	\N	\N
+1961	60	MATCH	7	2	0	\N	\N
+1962	28	MATCH	24	0	2	\N	\N
+1847	57	MATCH	6	1	2	\N	\N
+1964	51	MATCH	30	2	0	\N	\N
+1965	51	MATCH	24	1	2	\N	\N
+1966	51	MATCH	25	2	0	\N	\N
+1967	51	MATCH	31	1	0	\N	\N
+1968	51	MATCH	36	1	0	\N	\N
+1969	51	MATCH	37	2	0	\N	\N
+1970	51	MATCH	9	3	1	\N	\N
+1971	51	MATCH	8	0	2	\N	\N
+1972	51	MATCH	14	0	1	\N	\N
+1974	51	CHAMPION	\N	\N	\N	3	\N
+1975	44	MATCH	6	1	1	\N	\N
+1976	44	MATCH	7	2	1	\N	\N
+1977	44	MATCH	13	1	2	\N	\N
+1924	61	MATCH	13	2	1	\N	\N
+1897	27	MATCH	7	2	0	\N	\N
+1978	27	MATCH	30	1	0	\N	\N
+1979	27	MATCH	24	0	2	\N	\N
+1980	27	MATCH	25	2	0	\N	\N
+1981	44	MATCH	18	2	1	\N	\N
+1982	44	MATCH	19	2	1	\N	\N
+1983	44	MATCH	30	1	0	\N	\N
+1984	44	MATCH	24	1	1	\N	\N
+1985	44	MATCH	25	2	0	\N	\N
+1986	39	MATCH	14	1	1	\N	\N
+1988	34	MATCH	13	1	1	\N	\N
+1989	34	MATCH	18	2	1	\N	\N
+1990	34	MATCH	19	1	1	\N	\N
+1991	34	MATCH	30	2	1	\N	\N
+1992	34	MATCH	24	0	1	\N	\N
+1993	34	MATCH	25	2	1	\N	\N
+1994	34	MATCH	31	1	1	\N	\N
+1995	34	MATCH	36	1	2	\N	\N
+1996	34	MATCH	37	2	0	\N	\N
+1950	64	MATCH	27	2	1	\N	\N
+1913	39	MATCH	31	0	1	\N	\N
+1914	39	MATCH	36	1	2	\N	\N
+1916	39	MATCH	8	0	2	\N	\N
+1963	28	MATCH	31	1	1	\N	\N
+1915	39	MATCH	37	3	1	\N	\N
+1917	39	MATCH	9	1	0	\N	\N
+1973	51	MATCH	15	0	1	\N	\N
+1714	58	MATCH	39	2	0	\N	\N
+1987	39	MATCH	15	0	1	\N	\N
+1871	57	MATCH	41	1	0	\N	\N
+1872	57	MATCH	42	3	1	\N	\N
+1873	57	MATCH	43	2	0	\N	\N
+1875	57	MATCH	45	1	2	\N	\N
+1876	57	MATCH	46	5	6	\N	\N
+1877	57	MATCH	47	1	0	\N	\N
+1881	57	MATCH	51	2	1	\N	\N
+1879	57	MATCH	49	1	3	\N	\N
+1878	57	MATCH	48	1	2	\N	\N
+1882	57	MATCH	52	5	4	\N	\N
+1884	57	MATCH	54	0	2	\N	\N
+1883	57	MATCH	53	2	0	\N	\N
+1997	34	MATCH	9	1	1	\N	\N
+1998	34	MATCH	8	0	2	\N	\N
+1999	62	MATCH	30	1	0	\N	\N
+2000	62	MATCH	24	0	1	\N	\N
+2001	62	MATCH	25	2	0	\N	\N
+2002	41	MATCH	13	1	2	\N	\N
+2003	41	MATCH	18	1	0	\N	\N
+2004	41	MATCH	19	2	1	\N	\N
+2005	51	MATCH	21	0	3	\N	\N
+2007	51	MATCH	26	1	3	\N	\N
+2008	51	MATCH	27	2	0	\N	\N
+313	30	MATCH	31	1	1	\N	\N
+2009	24	MATCH	30	1	0	\N	\N
+2010	24	MATCH	24	0	1	\N	\N
+2011	24	MATCH	25	2	0	\N	\N
+2012	24	MATCH	31	1	1	\N	\N
+2013	24	MATCH	36	2	1	\N	\N
+2014	24	MATCH	37	2	0	\N	\N
+1926	61	MATCH	19	3	1	\N	\N
+2015	61	MATCH	31	1	0	\N	\N
+2016	61	MATCH	36	2	2	\N	\N
+2017	61	MATCH	37	2	0	\N	\N
+2018	61	MATCH	8	1	2	\N	\N
+2019	61	MATCH	9	2	0	\N	\N
+2020	60	MATCH	13	2	1	\N	\N
+1485	42	MATCH	30	2	0	\N	\N
+2022	60	MATCH	19	3	1	\N	\N
+2023	60	MATCH	30	0	2	\N	\N
+2024	60	MATCH	24	1	2	\N	\N
+2025	60	MATCH	25	2	0	\N	\N
+1502	42	MATCH	32	1	0	\N	\N
+2026	42	CHAMPION	\N	\N	\N	3	\N
+2021	60	MATCH	18	1	0	\N	\N
+1855	57	MATCH	31	2	0	\N	\N
+591	59	MATCH	19	3	1	\N	\N
+2027	41	MATCH	30	2	0	\N	\N
+2028	41	MATCH	24	1	0	\N	\N
+2029	41	MATCH	25	2	0	\N	\N
+455	23	MATCH	21	0	1	\N	\N
+2030	63	MATCH	30	2	1	\N	\N
+2031	63	MATCH	24	0	1	\N	\N
+2032	63	MATCH	25	1	1	\N	\N
+2033	63	MATCH	31	1	1	\N	\N
+2034	63	MATCH	36	0	2	\N	\N
+2035	63	MATCH	37	1	0	\N	\N
+2036	63	MATCH	8	1	3	\N	\N
+2037	63	MATCH	9	1	1	\N	\N
+2038	63	MATCH	15	0	1	\N	\N
+2039	63	MATCH	14	1	2	\N	\N
+2040	63	MATCH	21	0	3	\N	\N
+2041	63	MATCH	20	0	2	\N	\N
+2042	63	MATCH	27	1	1	\N	\N
+2043	63	MATCH	26	2	1	\N	\N
+2044	63	MATCH	39	1	0	\N	\N
+2045	63	MATCH	38	0	0	\N	\N
+2046	63	MATCH	33	2	1	\N	\N
+2047	63	MATCH	32	2	0	\N	\N
+2048	24	MATCH	9	1	0	\N	\N
+2049	24	MATCH	8	0	2	\N	\N
+2050	24	MATCH	15	1	2	\N	\N
+2051	24	MATCH	14	0	2	\N	\N
+2052	24	MATCH	20	0	2	\N	\N
+2053	24	MATCH	21	1	2	\N	\N
+2054	24	MATCH	26	0	1	\N	\N
+1343	68	MATCH	25	2	1	\N	\N
+2055	27	MATCH	31	2	0	\N	\N
+2056	27	MATCH	36	1	0	\N	\N
+2057	27	MATCH	37	0	1	\N	\N
+2058	62	MATCH	31	1	0	\N	\N
+2059	62	MATCH	36	1	1	\N	\N
+2060	62	MATCH	37	1	0	\N	\N
+2061	62	MATCH	9	1	0	\N	\N
+2062	62	MATCH	8	0	2	\N	\N
+2063	41	MATCH	31	1	1	\N	\N
+2064	41	MATCH	37	2	0	\N	\N
+2065	41	MATCH	36	2	1	\N	\N
+2066	41	MATCH	15	1	1	\N	\N
+2067	41	MATCH	9	1	1	\N	\N
+2069	41	MATCH	14	0	1	\N	\N
+2068	41	MATCH	8	0	2	\N	\N
+2070	41	MATCH	20	1	2	\N	\N
+2071	60	MATCH	31	2	1	\N	\N
+2072	60	MATCH	36	1	1	\N	\N
+2073	60	MATCH	37	2	1	\N	\N
+2074	44	MATCH	31	2	1	\N	\N
+2075	44	MATCH	36	0	1	\N	\N
+2076	44	MATCH	37	2	1	\N	\N
+2077	44	MATCH	8	1	0	\N	\N
+2078	44	MATCH	9	1	0	\N	\N
+2079	27	MATCH	8	1	0	\N	\N
+2080	27	MATCH	9	2	1	\N	\N
+2081	27	MATCH	15	0	2	\N	\N
+2082	27	MATCH	14	0	2	\N	\N
+2083	28	MATCH	36	2	0	\N	\N
+2084	28	MATCH	37	2	0	\N	\N
+2085	39	MATCH	26	1	2	\N	\N
+2087	39	MATCH	39	1	1	\N	\N
+2088	39	MATCH	38	1	3	\N	\N
+2090	39	MATCH	32	1	1	\N	\N
+2091	43	MATCH	8	1	3	\N	\N
+2092	43	MATCH	9	2	1	\N	\N
+2093	43	MATCH	15	0	1	\N	\N
+2094	43	MATCH	14	1	1	\N	\N
+2095	43	MATCH	21	0	2	\N	\N
+2096	43	MATCH	20	0	1	\N	\N
+2097	43	MATCH	26	1	2	\N	\N
+2098	43	MATCH	27	1	1	\N	\N
+2099	43	MATCH	38	1	3	\N	\N
+2100	43	MATCH	39	1	2	\N	\N
+2101	43	MATCH	32	1	0	\N	\N
+2102	43	MATCH	33	1	2	\N	\N
+2103	60	MATCH	8	1	1	\N	\N
+2104	60	MATCH	9	2	1	\N	\N
+2105	44	MATCH	15	0	1	\N	\N
+2106	44	MATCH	14	1	0	\N	\N
+2107	44	MATCH	21	0	2	\N	\N
+2108	62	MATCH	14	1	2	\N	\N
+2109	62	MATCH	15	0	0	\N	\N
+2110	62	MATCH	21	0	2	\N	\N
+2111	62	MATCH	20	0	1	\N	\N
+2112	62	MATCH	26	0	1	\N	\N
+2113	62	MATCH	27	0	0	\N	\N
+2114	62	MATCH	39	0	1	\N	\N
+2115	62	MATCH	38	0	1	\N	\N
+2116	62	MATCH	32	1	0	\N	\N
+2117	62	MATCH	33	0	1	\N	\N
+2118	44	MATCH	20	0	1	\N	\N
+2119	41	MATCH	21	0	1	\N	\N
+2006	51	MATCH	20	0	2	\N	\N
+1208	21	MATCH	14	0	1	\N	\N
+2120	27	MATCH	20	0	2	\N	\N
+2121	27	MATCH	21	0	3	\N	\N
+191	53	MATCH	21	0	2	\N	\N
+2089	39	MATCH	33	1	1	\N	\N
+2122	27	MATCH	26	1	2	\N	\N
+2123	27	MATCH	27	1	0	\N	\N
+2124	27	MATCH	39	0	1	\N	\N
+2125	27	MATCH	38	0	2	\N	\N
+2126	27	MATCH	33	0	2	\N	\N
+2127	27	MATCH	32	1	0	\N	\N
+2128	34	MATCH	14	0	2	\N	\N
+2129	34	MATCH	15	3	0	\N	\N
+2130	34	MATCH	20	3	1	\N	\N
+2132	34	MATCH	27	3	3	\N	\N
+2133	34	MATCH	26	1	2	\N	\N
+2134	34	MATCH	39	1	1	\N	\N
+2136	34	MATCH	33	2	0	\N	\N
+2137	34	MATCH	32	1	1	\N	\N
+2131	34	MATCH	21	0	2	\N	\N
+2138	61	MATCH	15	1	2	\N	\N
+2139	61	MATCH	14	2	2	\N	\N
+2140	61	MATCH	21	1	3	\N	\N
+2141	61	MATCH	20	0	2	\N	\N
+2142	61	MATCH	26	1	2	\N	\N
+2143	61	MATCH	27	2	0	\N	\N
+2145	61	MATCH	33	1	3	\N	\N
+2144	61	MATCH	32	2	0	\N	\N
+2146	61	MATCH	38	2	1	\N	\N
+2147	61	MATCH	39	2	1	\N	\N
+2148	60	MATCH	14	1	2	\N	\N
+2149	60	MATCH	15	0	1	\N	\N
+1780	28	MATCH	20	0	2	\N	\N
+2150	28	MATCH	27	1	0	\N	\N
+2151	28	MATCH	26	0	1	\N	\N
+2152	28	MATCH	39	1	0	\N	\N
+2153	28	MATCH	38	1	1	\N	\N
+2154	28	MATCH	32	3	1	\N	\N
+2155	28	MATCH	33	1	2	\N	\N
+2156	51	MATCH	39	2	0	\N	\N
+2157	51	MATCH	38	1	1	\N	\N
+2158	51	MATCH	33	2	1	\N	\N
+2159	51	MATCH	32	2	0	\N	\N
+2163	48	MATCH	43	2	0	\N	\N
+2165	48	MATCH	45	2	1	\N	\N
+2168	48	MATCH	48	1	2	\N	\N
+2169	48	MATCH	49	1	3	\N	\N
+2175	24	MATCH	27	2	0	\N	\N
+2086	39	MATCH	27	2	0	\N	\N
+2176	60	MATCH	20	0	2	\N	\N
+2177	60	MATCH	21	0	2	\N	\N
+2178	60	MATCH	26	0	2	\N	\N
+2179	60	MATCH	27	1	0	\N	\N
+2135	34	MATCH	38	1	2	\N	\N
+2180	41	MATCH	32	2	0	\N	\N
+2181	41	MATCH	33	1	2	\N	\N
+2182	41	MATCH	39	0	1	\N	\N
+2183	41	MATCH	38	0	3	\N	\N
+2184	44	MATCH	39	1	2	\N	\N
+2185	44	MATCH	38	1	1	\N	\N
+2186	44	MATCH	33	0	1	\N	\N
+2187	44	MATCH	32	0	0	\N	\N
+2188	60	MATCH	38	0	2	\N	\N
+2189	60	MATCH	39	0	1	\N	\N
+2191	60	MATCH	33	0	2	\N	\N
+2192	68	MATCH	40	2	1	\N	\N
+2204	68	MATCH	52	1	0	\N	\N
+2205	68	MATCH	53	1	2	\N	\N
+2206	68	MATCH	54	3	1	\N	\N
+2207	24	MATCH	39	2	1	\N	\N
+2208	24	MATCH	38	1	1	\N	\N
+2209	24	MATCH	32	1	0	\N	\N
+2210	24	MATCH	33	1	2	\N	\N
+2224	24	MATCH	41	2	1	\N	\N
+2190	60	MATCH	32	1	0	\N	\N
+859	36	MATCH	33	1	2	\N	\N
+2211	46	MATCH	40	1	2	\N	\N
+2212	46	MATCH	42	2	1	\N	\N
+2213	46	MATCH	44	3	1	\N	\N
+2214	46	MATCH	46	0	2	\N	\N
+2215	29	MATCH	41	1	0	\N	\N
+2216	29	MATCH	42	1	0	\N	\N
+2217	29	MATCH	43	1	0	\N	\N
+2218	29	MATCH	44	1	0	\N	\N
+2219	29	MATCH	45	0	1	\N	\N
+2220	29	MATCH	46	1	0	\N	\N
+2221	29	MATCH	47	1	0	\N	\N
+2222	29	MATCH	40	0	1	\N	\N
+2160	48	MATCH	40	0	2	\N	\N
+2161	48	MATCH	41	2	1	\N	\N
+2162	48	MATCH	42	1	0	\N	\N
+2164	48	MATCH	44	2	1	\N	\N
+2166	48	MATCH	46	0	2	\N	\N
+2167	48	MATCH	47	0	1	\N	\N
+2223	24	MATCH	40	0	2	\N	\N
+2225	24	MATCH	42	2	1	\N	\N
+2226	24	MATCH	43	1	0	\N	\N
+2227	24	MATCH	44	2	0	\N	\N
+2228	24	MATCH	45	1	2	\N	\N
+2229	24	MATCH	46	4	5	\N	\N
+2230	24	MATCH	47	2	1	\N	\N
+2231	44	MATCH	40	0	1	\N	\N
+2232	44	MATCH	41	2	1	\N	\N
+2233	44	MATCH	42	1	0	\N	\N
+1720	58	MATCH	43	2	0	\N	\N
+2193	68	MATCH	41	1	0	\N	\N
+2197	68	MATCH	45	2	1	\N	\N
+2194	68	MATCH	42	3	2	\N	\N
+2195	68	MATCH	43	2	1	\N	\N
+2196	68	MATCH	44	2	0	\N	\N
+2198	68	MATCH	46	2	1	\N	\N
+2199	68	MATCH	47	1	0	\N	\N
+2234	38	MATCH	40	0	1	\N	\N
+2235	38	MATCH	41	2	0	\N	\N
+2236	38	MATCH	42	2	1	\N	\N
+2237	38	MATCH	43	2	1	\N	\N
+2238	38	MATCH	44	2	0	\N	\N
+2239	38	MATCH	45	1	2	\N	\N
+2241	38	MATCH	47	0	1	\N	\N
+2242	27	MATCH	40	0	2	\N	\N
+2243	27	MATCH	41	1	0	\N	\N
+2244	27	MATCH	42	2	1	\N	\N
+2245	27	MATCH	43	2	0	\N	\N
+2246	27	MATCH	44	2	0	\N	\N
+2247	27	MATCH	45	1	2	\N	\N
+2248	27	MATCH	46	0	2	\N	\N
+2250	61	MATCH	44	2	1	\N	\N
+2251	61	MATCH	41	2	0	\N	\N
+2249	27	MATCH	47	2	0	\N	\N
+2201	68	MATCH	49	1	3	\N	\N
+2173	48	MATCH	53	3	1	\N	\N
+2200	68	MATCH	48	2	1	\N	\N
+2203	68	MATCH	51	3	1	\N	\N
+2170	48	MATCH	50	3	1	\N	\N
+2202	68	MATCH	50	0	1	\N	\N
+2174	48	MATCH	54	1	0	\N	\N
+2172	48	MATCH	52	1	2	\N	\N
+2252	61	MATCH	45	4	5	\N	\N
+2253	61	MATCH	40	0	2	\N	\N
+2254	61	MATCH	42	3	2	\N	\N
+2255	61	MATCH	43	3	1	\N	\N
+2256	61	MATCH	47	1	0	\N	\N
+2257	61	MATCH	46	2	1	\N	\N
+2258	37	MATCH	40	0	2	\N	\N
+2259	37	MATCH	41	2	0	\N	\N
+2260	37	MATCH	42	3	2	\N	\N
+2261	37	MATCH	43	1	0	\N	\N
+2262	37	MATCH	44	4	0	\N	\N
+2263	37	MATCH	45	1	3	\N	\N
+2264	37	MATCH	46	1	2	\N	\N
+2265	37	MATCH	47	0	1	\N	\N
+2266	34	MATCH	40	3	2	\N	\N
+2269	34	MATCH	43	3	2	\N	\N
+2270	34	MATCH	44	3	2	\N	\N
+2271	34	MATCH	45	0	3	\N	\N
+2272	34	MATCH	46	0	3	\N	\N
+2267	34	MATCH	41	2	1	\N	\N
+2268	34	MATCH	42	1	2	\N	\N
+2273	34	MATCH	47	2	1	\N	\N
+2274	35	MATCH	40	4	3	\N	\N
+2275	35	MATCH	41	2	1	\N	\N
+2276	35	MATCH	42	2	1	\N	\N
+2277	35	MATCH	43	2	1	\N	\N
+2278	35	MATCH	44	2	1	\N	\N
+2279	35	MATCH	45	0	2	\N	\N
+2280	35	MATCH	46	1	0	\N	\N
+2281	35	MATCH	47	0	1	\N	\N
+2282	30	MATCH	40	2	1	\N	\N
+2283	30	MATCH	41	2	0	\N	\N
+2284	30	MATCH	42	3	2	\N	\N
+2285	30	MATCH	43	2	0	\N	\N
+2286	30	MATCH	44	2	0	\N	\N
+2287	30	MATCH	45	1	2	\N	\N
+2288	30	MATCH	46	1	2	\N	\N
+2289	30	MATCH	47	1	0	\N	\N
+2295	12	MATCH	45	1	3	\N	\N
+2296	12	MATCH	46	1	0	\N	\N
+2294	12	MATCH	44	2	0	\N	\N
+2290	12	MATCH	40	1	2	\N	\N
+2291	12	MATCH	41	1	0	\N	\N
+2292	12	MATCH	42	2	1	\N	\N
+2293	12	MATCH	43	2	0	\N	\N
+2297	12	MATCH	47	2	0	\N	\N
+2298	51	MATCH	40	1	2	\N	\N
+2299	51	MATCH	41	2	3	\N	\N
+2300	51	MATCH	42	2	1	\N	\N
+2303	64	MATCH	42	1	2	\N	\N
+2304	64	MATCH	43	2	1	\N	\N
+2305	64	MATCH	44	2	0	\N	\N
+2306	64	MATCH	45	0	1	\N	\N
+2301	64	MATCH	40	0	1	\N	\N
+2302	64	MATCH	41	1	2	\N	\N
+2351	31	MATCH	41	2	1	\N	\N
+2307	64	MATCH	46	2	0	\N	\N
+2308	64	MATCH	47	1	0	\N	\N
+2309	53	MATCH	40	2	1	\N	\N
+2310	53	MATCH	46	1	2	\N	\N
+2311	53	MATCH	45	0	2	\N	\N
+2312	53	MATCH	42	1	2	\N	\N
+2313	53	MATCH	47	1	1	\N	\N
+2314	53	MATCH	41	1	2	\N	\N
+2315	53	MATCH	43	1	0	\N	\N
+2316	53	MATCH	44	2	0	\N	\N
+613	59	MATCH	43	1	0	\N	\N
+2317	39	MATCH	40	1	3	\N	\N
+2318	39	MATCH	41	2	0	\N	\N
+2319	39	MATCH	42	5	4	\N	\N
+2320	39	MATCH	43	2	1	\N	\N
+2323	39	MATCH	46	1	2	\N	\N
+2324	39	MATCH	47	0	2	\N	\N
+2327	36	MATCH	42	1	2	\N	\N
+2329	36	MATCH	44	2	0	\N	\N
+2330	36	MATCH	45	1	3	\N	\N
+2352	31	MATCH	42	2	1	\N	\N
+2353	31	MATCH	43	1	0	\N	\N
+2354	31	MATCH	44	1	0	\N	\N
+2325	36	MATCH	40	2	1	\N	\N
+2326	36	MATCH	41	1	0	\N	\N
+2328	36	MATCH	43	2	0	\N	\N
+2331	36	MATCH	46	1	2	\N	\N
+2332	36	MATCH	47	0	1	\N	\N
+1874	57	MATCH	44	2	0	\N	\N
+2333	62	MATCH	40	0	1	\N	\N
+2334	62	MATCH	41	1	0	\N	\N
+2335	62	MATCH	42	1	0	\N	\N
+2336	62	MATCH	43	2	0	\N	\N
+2337	62	MATCH	44	2	0	\N	\N
+2338	62	MATCH	45	1	2	\N	\N
+2339	62	MATCH	46	0	1	\N	\N
+2340	62	MATCH	47	2	0	\N	\N
+2341	52	MATCH	40	1	2	\N	\N
+2342	52	MATCH	41	2	1	\N	\N
+2343	52	MATCH	42	2	1	\N	\N
+2344	52	MATCH	43	2	0	\N	\N
+2345	52	MATCH	44	4	1	\N	\N
+2346	52	MATCH	45	0	1	\N	\N
+2347	52	MATCH	46	2	1	\N	\N
+2348	52	MATCH	47	2	1	\N	\N
+2349	45	CHAMPION	\N	\N	\N	3	\N
+1614	45	MATCH	45	0	3	\N	\N
+2350	31	MATCH	40	1	0	\N	\N
+2355	31	MATCH	45	0	1	\N	\N
+2356	31	MATCH	46	1	0	\N	\N
+2357	31	MATCH	47	2	1	\N	\N
+2240	38	MATCH	46	4	5	\N	\N
+2358	28	MATCH	47	0	1	\N	\N
+2359	28	MATCH	46	2	1	\N	\N
+2360	28	MATCH	44	2	0	\N	\N
+2361	28	MATCH	41	2	0	\N	\N
+2362	28	MATCH	40	6	5	\N	\N
+2363	28	MATCH	42	2	1	\N	\N
+2364	63	MATCH	40	0	1	\N	\N
+2365	63	MATCH	41	2	0	\N	\N
+2366	28	MATCH	43	1	0	\N	\N
+2367	63	MATCH	42	2	1	\N	\N
+2368	28	MATCH	45	1	2	\N	\N
+2369	63	MATCH	43	2	0	\N	\N
+2370	63	MATCH	44	3	1	\N	\N
+2371	63	MATCH	45	2	1	\N	\N
+2372	63	MATCH	46	2	0	\N	\N
+2373	63	MATCH	47	2	1	\N	\N
+2374	21	MATCH	40	1	2	\N	\N
+2375	21	MATCH	41	1	0	\N	\N
+2377	21	MATCH	43	1	0	\N	\N
+2378	21	MATCH	44	2	0	\N	\N
+2379	60	MATCH	40	0	1	\N	\N
+2380	21	MATCH	45	0	1	\N	\N
+2381	21	MATCH	47	2	0	\N	\N
+2382	60	MATCH	41	2	0	\N	\N
+2322	39	MATCH	45	5	4	\N	\N
+2376	21	MATCH	42	2	1	\N	\N
+2383	21	MATCH	46	1	2	\N	\N
+2385	33	MATCH	41	1	2	\N	\N
+2386	33	MATCH	42	2	1	\N	\N
+2387	33	MATCH	43	2	1	\N	\N
+2384	33	MATCH	40	1	2	\N	\N
+2388	33	MATCH	44	2	1	\N	\N
+2389	33	MATCH	45	1	2	\N	\N
+2390	33	MATCH	46	1	2	\N	\N
+2391	33	MATCH	47	2	1	\N	\N
+2392	67	MATCH	41	2	0	\N	\N
+2393	67	MATCH	42	2	1	\N	\N
+2394	67	MATCH	43	1	0	\N	\N
+2395	67	MATCH	44	2	0	\N	\N
+2396	67	MATCH	45	0	2	\N	\N
+2397	67	MATCH	46	2	1	\N	\N
+2398	67	MATCH	47	2	1	\N	\N
+2400	54	MATCH	42	1	0	\N	\N
+2399	54	MATCH	41	0	1	\N	\N
+2489	52	MATCH	49	1	2	\N	\N
+2402	51	MATCH	43	1	0	\N	\N
+2403	51	MATCH	44	2	0	\N	\N
+2404	51	MATCH	45	4	5	\N	\N
+2405	51	MATCH	46	2	1	\N	\N
+2406	51	MATCH	47	2	3	\N	\N
+2407	46	MATCH	43	2	3	\N	\N
+2408	46	MATCH	45	2	1	\N	\N
+2411	46	MATCH	49	1	0	\N	\N
+2413	46	MATCH	51	2	3	\N	\N
+2416	46	MATCH	54	1	0	\N	\N
+2417	60	MATCH	42	2	1	\N	\N
+2418	65	MATCH	42	1	2	\N	\N
+2419	65	MATCH	43	1	0	\N	\N
+2420	65	MATCH	44	2	0	\N	\N
+2421	65	MATCH	45	1	2	\N	\N
+2422	65	MATCH	46	0	1	\N	\N
+2423	65	MATCH	47	1	0	\N	\N
+2424	65	MATCH	48	1	0	\N	\N
+2425	65	MATCH	49	2	0	\N	\N
+2426	65	MATCH	50	4	3	\N	\N
+2427	65	MATCH	51	1	0	\N	\N
+2428	44	MATCH	43	1	0	\N	\N
+2429	44	MATCH	44	2	0	\N	\N
+2430	44	MATCH	45	1	0	\N	\N
+2431	44	MATCH	46	0	1	\N	\N
+2432	44	MATCH	47	1	0	\N	\N
+466	23	MATCH	44	2	0	\N	\N
+2409	46	MATCH	47	4	5	\N	\N
+2433	56	MATCH	43	0	1	\N	\N
+2434	56	MATCH	44	2	0	\N	\N
+2436	56	MATCH	46	2	1	\N	\N
+2437	56	MATCH	47	0	1	\N	\N
+2438	41	MATCH	43	2	1	\N	\N
+2439	41	MATCH	44	2	0	\N	\N
+2490	52	MATCH	50	3	1	\N	\N
+2441	41	MATCH	46	3	2	\N	\N
+2440	41	MATCH	45	2	0	\N	\N
+2442	41	MATCH	47	1	2	\N	\N
+2443	54	MATCH	44	2	0	\N	\N
+2401	54	MATCH	43	1	0	\N	\N
+2444	54	MATCH	45	1	2	\N	\N
+2445	54	MATCH	46	3	2	\N	\N
+2446	54	MATCH	47	1	0	\N	\N
+2447	60	MATCH	44	2	0	\N	\N
+2449	60	MATCH	45	0	1	\N	\N
+2448	60	MATCH	43	2	0	\N	\N
+2491	52	MATCH	51	2	1	\N	\N
+2321	39	MATCH	44	3	1	\N	\N
+2435	56	MATCH	45	0	1	\N	\N
+2450	60	MATCH	46	1	2	\N	\N
+2452	43	MATCH	46	5	4	\N	\N
+2453	43	MATCH	47	4	5	\N	\N
+2451	60	MATCH	47	2	0	\N	\N
+2454	28	MATCH	48	5	4	\N	\N
+2455	28	MATCH	49	1	2	\N	\N
+2456	28	MATCH	50	3	2	\N	\N
+2459	66	MATCH	50	3	2	\N	\N
+2461	62	MATCH	48	0	1	\N	\N
+2462	62	MATCH	49	0	1	\N	\N
+2463	62	MATCH	50	1	0	\N	\N
+2465	39	MATCH	49	1	3	\N	\N
+2466	39	MATCH	48	5	4	\N	\N
+2468	29	MATCH	49	0	1	\N	\N
+2469	29	MATCH	48	0	1	\N	\N
+2470	29	MATCH	51	1	0	\N	\N
+2471	55	MATCH	49	1	2	\N	\N
+2472	55	MATCH	48	0	1	\N	\N
+2474	51	MATCH	48	1	2	\N	\N
+2475	51	MATCH	49	1	2	\N	\N
+2476	51	MATCH	50	2	1	\N	\N
+2478	51	MATCH	51	2	1	\N	\N
+2479	39	MATCH	51	6	4	\N	\N
+2410	46	MATCH	48	4	3	\N	\N
+2480	61	MATCH	48	0	1	\N	\N
+2481	61	MATCH	49	1	3	\N	\N
+2482	61	MATCH	50	3	1	\N	\N
+2483	61	MATCH	51	1	2	\N	\N
+2484	38	MATCH	48	0	2	\N	\N
+2485	38	MATCH	49	1	3	\N	\N
+2486	38	MATCH	50	1	0	\N	\N
+2487	38	MATCH	51	2	1	\N	\N
+2488	52	MATCH	48	1	2	\N	\N
+2493	35	MATCH	49	1	3	\N	\N
+2495	35	MATCH	51	2	3	\N	\N
+2496	34	MATCH	48	0	2	\N	\N
+2499	34	MATCH	51	3	2	\N	\N
+2498	34	MATCH	50	2	0	\N	\N
+2503	37	MATCH	48	1	2	\N	\N
+2504	37	MATCH	49	0	3	\N	\N
+2505	37	MATCH	50	5	4	\N	\N
+2506	37	MATCH	51	0	1	\N	\N
+2507	24	MATCH	48	4	2	\N	\N
+2508	24	MATCH	49	1	2	\N	\N
+2509	24	MATCH	50	2	0	\N	\N
+2510	24	MATCH	51	1	2	\N	\N
+2511	33	MATCH	48	1	2	\N	\N
+2512	33	MATCH	49	1	2	\N	\N
+2513	33	MATCH	50	2	1	\N	\N
+2514	33	MATCH	51	2	1	\N	\N
+2492	35	MATCH	48	1	2	\N	\N
+2494	35	MATCH	50	2	1	\N	\N
+2467	29	MATCH	50	1	0	\N	\N
+2458	66	MATCH	49	1	0	\N	\N
+2473	55	MATCH	50	2	1	\N	\N
+2412	46	MATCH	50	2	0	\N	\N
+2464	39	MATCH	50	4	1	\N	\N
+2477	55	MATCH	51	2	1	\N	\N
+2460	66	MATCH	51	1	2	\N	\N
+2501	34	MATCH	53	2	1	\N	\N
+2500	34	MATCH	52	6	5	\N	\N
+2414	46	MATCH	52	4	5	\N	\N
+2415	46	MATCH	53	2	0	\N	\N
+2502	34	MATCH	54	1	2	\N	\N
+2515	36	MATCH	48	1	2	\N	\N
+2517	36	MATCH	50	2	1	\N	\N
+2518	36	MATCH	51	2	1	\N	\N
+2519	44	MATCH	48	2	1	\N	\N
+2520	30	MATCH	48	0	1	\N	\N
+2521	30	MATCH	49	0	2	\N	\N
+2523	30	MATCH	51	3	1	\N	\N
+2522	30	MATCH	50	3	1	\N	\N
+2457	66	MATCH	48	2	1	\N	\N
+2524	64	MATCH	49	1	2	\N	\N
+2525	64	MATCH	50	3	1	\N	\N
+2526	64	MATCH	51	3	0	\N	\N
+2527	64	MATCH	48	1	0	\N	\N
+2171	48	MATCH	51	2	1	\N	\N
+2528	31	MATCH	50	2	1	\N	\N
+2529	31	MATCH	51	1	0	\N	\N
+2530	31	MATCH	49	1	2	\N	\N
+2531	31	MATCH	48	0	1	\N	\N
+2535	63	MATCH	48	1	2	\N	\N
+2536	63	MATCH	50	3	0	\N	\N
+2537	63	MATCH	49	3	1	\N	\N
+2538	63	MATCH	51	2	0	\N	\N
+2539	56	MATCH	48	2	1	\N	\N
+2540	56	MATCH	49	0	1	\N	\N
+2541	56	MATCH	50	2	1	\N	\N
+2542	56	MATCH	51	2	0	\N	\N
+2543	54	MATCH	48	1	2	\N	\N
+2544	54	MATCH	49	0	1	\N	\N
+2545	54	MATCH	50	2	0	\N	\N
+2546	27	MATCH	48	2	0	\N	\N
+2547	27	MATCH	49	0	2	\N	\N
+2548	27	MATCH	50	2	0	\N	\N
+2549	27	MATCH	51	2	1	\N	\N
+2550	21	MATCH	49	1	2	\N	\N
+2551	21	MATCH	48	2	1	\N	\N
+2552	21	MATCH	50	2	0	\N	\N
+2553	21	MATCH	51	2	0	\N	\N
+2557	67	MATCH	51	2	1	\N	\N
+2556	67	MATCH	50	2	1	\N	\N
+2554	67	MATCH	48	0	2	\N	\N
+2611	27	MATCH	53	2	0	\N	\N
+2558	67	MATCH	54	2	1	\N	\N
+2559	67	MATCH	52	2	0	\N	\N
+2561	12	MATCH	48	2	1	\N	\N
+2562	12	MATCH	49	0	2	\N	\N
+2563	12	MATCH	50	3	0	\N	\N
+2564	12	MATCH	51	1	0	\N	\N
+2565	60	MATCH	48	2	1	\N	\N
+2567	54	MATCH	51	1	0	\N	\N
+2568	41	MATCH	49	1	3	\N	\N
+2569	41	MATCH	50	3	1	\N	\N
+2570	41	MATCH	51	2	0	\N	\N
+2571	62	MATCH	51	1	0	\N	\N
+2497	34	MATCH	49	1	2	\N	\N
+2516	36	MATCH	49	1	2	\N	\N
+2572	44	MATCH	49	1	2	\N	\N
+2573	44	MATCH	50	2	0	\N	\N
+2574	44	MATCH	51	1	2	\N	\N
+2566	60	MATCH	49	0	3	\N	\N
+2555	67	MATCH	49	0	3	\N	\N
+2575	43	MATCH	50	4	1	\N	\N
+2576	43	MATCH	51	4	5	\N	\N
+2577	60	MATCH	50	2	1	\N	\N
+2578	28	MATCH	51	0	1	\N	\N
+1649	25	MATCH	50	1	0	\N	\N
+2579	60	MATCH	51	2	0	\N	\N
+2580	60	MATCH	52	1	2	\N	\N
+2581	62	MATCH	52	1	0	\N	\N
+2582	55	MATCH	52	2	1	\N	\N
+2583	55	MATCH	53	2	1	\N	\N
+2584	29	MATCH	52	1	0	\N	\N
+2585	29	MATCH	53	1	0	\N	\N
+247	32	MATCH	53	3	2	\N	\N
+2586	51	MATCH	53	3	2	\N	\N
+2587	51	MATCH	52	2	0	\N	\N
+2588	43	MATCH	52	4	5	\N	\N
+2589	43	MATCH	53	2	1	\N	\N
+2590	61	MATCH	53	5	4	\N	\N
+2591	61	MATCH	52	1	2	\N	\N
+2592	65	MATCH	52	1	0	\N	\N
+2593	65	MATCH	53	2	1	\N	\N
+2595	39	MATCH	53	3	2	\N	\N
+2596	54	MATCH	52	2	1	\N	\N
+2597	54	MATCH	53	1	2	\N	\N
+2599	38	MATCH	52	1	2	\N	\N
+2600	38	MATCH	53	2	1	\N	\N
+2602	35	MATCH	53	3	1	\N	\N
+2603	56	MATCH	52	4	5	\N	\N
+2604	56	MATCH	53	3	1	\N	\N
+2532	31	MATCH	52	1	2	\N	\N
+2533	31	MATCH	53	1	0	\N	\N
+2605	33	MATCH	52	1	2	\N	\N
+2606	33	MATCH	53	2	1	\N	\N
+2607	63	MATCH	52	1	2	\N	\N
+2612	64	MATCH	52	2	1	\N	\N
+2613	64	MATCH	53	2	1	\N	\N
+2608	63	MATCH	53	3	2	\N	\N
+2609	62	MATCH	53	1	0	\N	\N
+2560	67	MATCH	53	2	1	\N	\N
+2610	27	MATCH	52	0	2	\N	\N
+2614	30	MATCH	52	1	2	\N	\N
+2615	30	MATCH	53	2	1	\N	\N
+2616	37	MATCH	52	2	1	\N	\N
+2617	37	MATCH	53	2	1	\N	\N
+2619	44	MATCH	53	2	1	\N	\N
+2618	44	MATCH	52	1	2	\N	\N
+2620	53	MATCH	52	3	2	\N	\N
+2621	53	MATCH	53	2	1	\N	\N
+2622	12	MATCH	52	0	1	\N	\N
+2623	12	MATCH	53	2	0	\N	\N
+2624	21	MATCH	52	1	2	\N	\N
+2625	21	MATCH	53	2	1	\N	\N
+2626	28	MATCH	52	0	2	\N	\N
+2627	36	MATCH	52	3	1	\N	\N
+2636	28	MATCH	53	2	1	\N	\N
+2594	39	MATCH	52	6	5	\N	\N
+2629	24	MATCH	52	0	1	\N	\N
+2630	24	MATCH	53	2	1	\N	\N
+2631	52	MATCH	52	1	2	\N	\N
+2632	52	MATCH	53	3	1	\N	\N
+2601	35	MATCH	52	2	3	\N	\N
+2633	41	MATCH	52	2	3	\N	\N
+2634	41	MATCH	53	2	1	\N	\N
+2635	66	MATCH	53	1	0	\N	\N
+2628	36	MATCH	53	0	2	\N	\N
+2598	60	MATCH	53	3	1	\N	\N
+2637	54	MATCH	54	1	2	\N	\N
+2534	31	MATCH	54	2	1	\N	\N
+2638	38	MATCH	54	2	1	\N	\N
+2639	29	MATCH	54	0	2	\N	\N
+2640	12	MATCH	54	0	1	\N	\N
+2641	33	MATCH	54	1	2	\N	\N
+2643	35	MATCH	54	1	0	\N	\N
+2642	61	MATCH	54	1	4	\N	\N
+2644	36	MATCH	54	1	2	\N	\N
+2645	53	MATCH	54	1	2	\N	\N
+2646	56	MATCH	54	2	1	\N	\N
+2647	24	MATCH	54	1	3	\N	\N
+2649	65	MATCH	54	1	0	\N	\N
+2650	41	MATCH	54	1	2	\N	\N
+2648	62	MATCH	54	0	1	\N	\N
+2651	37	MATCH	54	1	0	\N	\N
+2652	55	MATCH	54	1	2	\N	\N
+2653	21	MATCH	54	1	2	\N	\N
+2654	63	MATCH	54	1	3	\N	\N
+2655	39	MATCH	54	6	4	\N	\N
+2656	28	MATCH	54	0	3	\N	\N
+2657	66	MATCH	54	1	0	\N	\N
+2658	60	MATCH	54	1	0	\N	\N
+\.
+
+
+--
+-- Name: Bet_betId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"Bet_betId_seq"', 2658, true);
+
+
+--
+-- Data for Name: Betgroup; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "Betgroup" ("betgroupId", betgroupname, description) FROM stdin;
+1	FREUNDE	Freunde
+2	KOLLEGEN	Kollegen
+\.
+
+
+--
+-- Name: Betgroup_betgroupId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"Betgroup_betgroupId_seq"', 2, true);
+
+
+--
+-- Data for Name: Bracket; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "Bracket" ("bracketId", bracketname, description, "phaseId") FROM stdin;
+1	A	Gruppe A	1
+2	B	Gruppe B	1
+3	C	Gruppe C	1
+4	D	Gruppe D	1
+5	E	Gruppe E	1
+6	F	Gruppe F	1
+\.
+
+
+--
+-- Data for Name: BracketTeam; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "BracketTeam" ("bracketTeamId", "bracketId", "teamId") FROM stdin;
+4	1	5
+5	1	14
+6	1	1
+7	1	17
+8	2	4
+9	2	15
+10	2	24
+11	2	18
+12	3	3
+13	3	22
+14	3	12
+15	3	10
+16	4	19
+17	4	20
+18	4	21
+19	4	9
+20	5	2
+21	5	8
+22	5	6
+23	5	16
+24	6	13
+25	6	7
+26	6	11
+27	6	23
+\.
+
+
+--
+-- Name: BracketTeam_bracketTeamId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"BracketTeam_bracketTeamId_seq"', 32, true);
+
+
+--
+-- Name: Bracket_bracketId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"Bracket_bracketId_seq"', 16, true);
+
+
+--
+-- Data for Name: Phase; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "Phase" ("phaseId", phasename, description, datefrom, isgroupphase) FROM stdin;
+1	Gruppe	Gruppenphase	2016-06-10 21:00:00	t
+2	Achtel	Achtelfinale	2016-06-25 15:00:00	f
+3	Viertel	Viertelfinale	2016-06-30 21:00:00	f
+4	Halb	Halbfinale	2016-07-06 21:00:00	f
+5	Finale	Finale	2016-07-10 21:00:00	f
+\.
+
+
+--
+-- Name: Phase_phaseId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"Phase_phaseId_seq"', 8, true);
+
+
+--
+-- Data for Name: Role; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "Role" ("roleId", rolename, description) FROM stdin;
+1	ADMIN	Administrator
+5	TIPPADMIN	Tipp-Administrator
+\.
+
+
+--
+-- Name: Role_roleId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"Role_roleId_seq"', 15, true);
+
+
+--
+-- Data for Name: SoccerMatch; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "SoccerMatch" ("matchId", "phaseId", datetime, "teamIdHome", "teamIdGuest", "scoreHome", "scoreGuest", isfinals) FROM stdin;
+29	1	2016-06-13 21:00:00	2	8	0	2	f
+34	1	2016-06-14 18:00:00	11	23	0	2	f
+54	5	2016-07-10 21:00:00	13	5	1	0	t
+35	1	2016-06-14 21:00:00	13	7	1	1	f
+12	1	2016-06-15 15:00:00	15	18	1	2	f
+6	1	2016-06-15 18:00:00	14	17	1	1	f
+7	1	2016-06-15 21:00:00	5	1	2	0	f
+13	1	2016-06-16 15:00:00	4	24	2	1	f
+18	1	2016-06-16 18:00:00	22	10	0	2	f
+19	1	2016-06-16 21:00:00	3	12	0	0	f
+30	1	2016-06-17 15:00:00	8	16	1	0	f
+4	1	2016-06-10 21:00:00	5	14	2	1	f
+5	1	2016-06-11 15:00:00	1	17	0	1	f
+10	1	2016-06-11 18:00:00	24	18	2	1	f
+11	1	2016-06-11 21:00:00	4	15	1	1	f
+22	1	2016-06-12 15:00:00	21	9	0	1	f
+16	1	2016-06-12 18:00:00	12	10	1	0	f
+17	1	2016-06-12 21:00:00	3	22	2	0	f
+23	1	2016-06-13 15:00:00	19	20	1	0	f
+28	1	2016-06-13 18:00:00	6	16	1	1	f
+24	1	2016-06-17 18:00:00	20	9	2	2	f
+25	1	2016-06-17 21:00:00	19	21	3	0	f
+31	1	2016-06-18 15:00:00	2	6	3	0	f
+36	1	2016-06-18 18:00:00	7	23	1	1	f
+37	1	2016-06-18 21:00:00	13	11	0	0	f
+8	1	2016-06-19 21:00:00	17	5	0	0	f
+9	1	2016-06-19 21:00:00	14	1	0	1	f
+15	1	2016-06-20 21:00:00	15	24	0	3	f
+14	1	2016-06-20 21:00:00	18	4	0	0	f
+21	1	2016-06-21 18:00:00	10	3	0	1	f
+20	1	2016-06-21 18:00:00	22	12	0	1	f
+27	1	2016-06-21 21:00:00	20	21	0	2	f
+26	1	2016-06-21 21:00:00	9	19	2	1	f
+39	1	2016-06-22 18:00:00	7	11	2	1	f
+38	1	2016-06-22 18:00:00	23	13	3	3	f
+33	1	2016-06-22 21:00:00	16	2	0	1	f
+32	1	2016-06-22 21:00:00	8	6	0	1	f
+40	2	2016-06-25 15:00:00	17	12	4	5	f
+41	2	2016-06-25 18:00:00	24	10	1	0	f
+42	2	2016-06-25 21:00:00	9	13	0	1	f
+43	2	2016-06-26 15:00:00	5	6	2	1	f
+44	2	2016-06-26 18:00:00	3	18	3	0	f
+45	2	2016-06-26 21:00:00	23	2	0	4	f
+46	2	2016-06-27 18:00:00	8	19	2	0	f
+47	2	2016-06-27 21:00:00	4	7	1	2	f
+48	3	2016-06-30 21:00:00	12	13	3	5	f
+49	3	2016-07-01 21:00:00	24	2	3	1	f
+50	3	2016-07-02 21:00:00	3	8	7	6	f
+51	3	2016-07-03 21:00:00	5	7	5	2	f
+52	4	2016-07-06 21:00:00	13	24	2	0	f
+53	4	2016-07-07 21:00:00	3	5	0	2	f
+\.
+
+
+--
+-- Name: SoccerMatch_matchId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"SoccerMatch_matchId_seq"', 55, true);
+
+
+--
+-- Data for Name: Team; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "Team" ("teamId", teamname, description) FROM stdin;
+1	ALB	Albanien
+2	BEL	Belgien
+3	DEU	Deutschland
+4	ENG	England
+5	FRA	Frankreich
+6	IRL	Irland
+7	ISL	Island
+8	ITA	Italien
+9	HRV	Kroatien
+10	NIR	Nordirland
+11	AUT	Österreich
+12	PL	Polen
+13	PRT	Portugal
+14	ROU	Rumänien
+15	RUS	Russland
+16	SWE	Schweden
+17	CHE	Schweiz
+18	SVK	Slowakei
+19	ESP	Spanien
+20	CZE	Tschechien
+21	TUR	Türkei
+22	UKR	Ukraine
+23	HUN	Ungarn
+24	WLS	Wales
+29	NB	Nicht bekannt
+\.
+
+
+--
+-- Name: Team_teamId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"Team_teamId_seq"', 31, true);
+
+
+--
+-- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "User" ("userId", username, password, lastname, firstname, email, passwordinit) FROM stdin;
+12	fxeller	QsI3Nu6oD2M2BDNOyvcidtGT4sjpvtXa	Xeller	Florian	fxeller@delmak.de	\N
+57	dsattler	exq6+1C26kmsNxKNPvS5qU2ctGBF5G6m	Sattler	Daniel	daniel.sattler@cgm.com	\N
+52	mhaumayr	ljGipZYp6ASE8WZdYOlsH6fxD60M5Xkk	Haumayr	Manfred	Manfred.Haumayr@cgm.com	\N
+29	kvanmeel	AfrRDjftb+7JXfedcW2mBSGXhViZYTYF	Van Meel	Koos	koos.vanmeel@gmx.de	\N
+46	mzunkel	rNlJ2xp7UC1zRe4Zw08s7rpRT/NiFXMk	Zunkel	Marco	marco.zunkel@cgm.com	\N
+24	stympel	X8Q4H1nwFKieIQrYIW2ix3mo6IasLh1u	Tympel	Stephen	stephen.tympel@web.de	9UPjsXFLx4Rg
+28	nxeller	9RoQH3O9d2MiO6HiItdPePKnGFnSuZki	Xeller	Nicole	NXeller@gmx.de	oZ5Q90FtygAv
+43	rhollaender	b8L6PCNsBdk9LygrhNekuYZFMMIMq7sI	Holländer	Richard	Richard.Hollaender@cgm.com	\N
+45	okuhlmey	8PojLiEvfQ9/3X4aaAamarLbxVzKCslb	Kuhlmey	Ole	Ole.Kuhlmey@CGM.com	\N
+60	croesch	PQngHgBOR+Ti7rll4tGnKGH/kf7xWA4i	Rösch	Claudia	Claudia.Roesch@CGM.com	\N
+40	sspiess	NcU5DbaGp19ZNBWCYNSsSJog7kp9YcvI	Spiess	Sarah	spiesssarah@gmx.de	\N
+55	jwagner	5GOsbmOqhjVuGnX/OiwRfy3/bY7uy1I9	Wagner	Julia	jula.w@gmx.de	\N
+34	bnickel	nfsBiTOmVsECMRKkI+J351ARnYAUVm5E	Nickel	Brigitte	Brigitte.Nickel@CGM.com	\N
+27	cvoelkle	+8eOHc/bjuM2K1X33jAZN5/wNLJlAFeK	Völkle	Christof	Chris@sonation.de	\N
+42	sgrossdoepfer	0OSCIvJPRQ7W1RJCDmP/LkfohA5NRyIG	Gross-Doepfer	Sabine	sabine.gross-doepfer@cgm.com	\N
+31	swuerstle	i7WsiGuOhFu94NpKPuBPMFUeDy6gfO1h	Würstle	Stefanie	s.schuttkowski@hotmail.de	\N
+62	shefele	o3hOHY4/QSI/reU4JkAgA5fAKqQwe1yf	Hefele	Siglinde	Siglinde.Hefele@CGM.com	\N
+65	mmader	e06jSRHBzfysZGEpwmFAKk533uJKYttb	Mader	Malenka	malenka.mader@fdm.uni-freiburg.de	\N
+33	bnessler	K6FJHzIyS3pO8g7kkOivnYUMv4IWjUHD	Nessler	Bernhard	bernhard@nessler.co	\N
+48	uliebing	UDQpB9zQxTGXpViivf3Ia3XrOuBPqyca	Liebing	Ulrich	Ulrich.Liebing@CGM.com	\N
+61	lwild	whuSkkhaZWW0WV5yGYKpC2YbTlYgCb7E	Wild	Lothar	Lothar.Wild@CGM.com	\N
+30	kxeller	U3mE84/ELb0W3dJUDdFLIR5lEX9R7hO3	Xeller	Katrin	superkaedder@web.de	\N
+1	admin	MMlgnn0mae3x4RfiCyk3mVFVIEZ/+3Hr	Mustermann	Manfred	fxeller@delmak.de	flHHsoOjrB6r
+38	fkolaska	N/EeQ7dXjwErV39cSvTT7aEijza7Fu68	Kolaska	Fabian	Fabian.Kolaska@CGM.com	\N
+44	gbaur	9BP3sUP6bTlIlzJctSXZ4z4Uoxe5b3t3	Baur	Gerhard	Gerhard.Baur@CGM.com	\N
+53	thepp	4hGXg2Om45LGLIYLcWqnCXU4ynYGy4aT	Hepp	Tamara	Tamara.Hepp@CGM.com	\N
+50	dadam	Im5zZwA20xA+v7Imbz+fXpp9DsT0B22r	Adam	Diana	diana.adam@gmx.de	\N
+39	mglaserzacharias	5oFNXaKSHWiNbn+EVJN4tJBVBuxc67T7	Glaser-Zacharias	Marlene	Marlene.Glaser-Zacharias@CGM.com	\N
+59	pstadler	s/racznGTfsuDHkKo3FVzUcj5GNvypYU	Stadler	Peter	Peter.Stadler@cgm.com	\N
+47	cgoettel	O+QBA42dXVvFs6qXuyG7mZN7EuZni8P7	Göttel	Christian	Christian.Goettel@cgm.com	\N
+37	gjost	qU3cv835MSFxP9hp6GduKG25qfhXhVRN	Jost	Gerhard	Gerhard.Jost@CGM.com	\N
+49	sweinmann	qUsH2XLmUaaza++wv7KTBcimwlKsckXN	Weinmann	Stefan	Stefan.Weinmann@cgm.com	\N
+54	epizel	JXJf13CCvx2I3uXASkVysF4lnNGXVQYv	Pizel	Evi	pizel.evelyn@gmx.de	\N
+67	tlang	o+DuNf1/28tK2eBUYLPr2gtleeiRwx51	Lang	Tanja	tanja.lang@cgm.com	\N
+63	kraulefs	gLx2A8VtRtcBAavPBXEYyf638m9MrjKK	Raulefs	Kerrin	kerrin_raulefs@yahoo.co.uk	2onHnsgKqL0g
+64	wmader	VbIo4yGAqWvpA8ss4jxysTTLAv2vf/a0	Mader	Wolfgang	Wolfgang.Mader@fdm.uni-freiburg.de	Jo1rspuHnGme
+36	smaier	ipvGmtPse+xKIjL/T2Pj1TKyoSs2SSK2	Maier	Sonja	sonja.maier@cgm.com	\N
+25	ktympel	967uav5NfEttBX0pmFk8vlXZYAZuYy9P	Tympel	Karsten	karsten.tympel@web.de	\N
+66	umader	tBhczx33Qy/bKBJEbiDxbTyG2xZIuu2V	Mader	Ute	ute_mader@gmx.de	\N
+23	bmader	80difsh2H6by+d8M6fuYh//mQ/wl3S8z	Mader	Bruno	Dr.Mader@gmx.de	\N
+56	theydemann	r3dTOea2B0egdzRyKVZhFFgjxMbxsuPK	Heydemann	Torsten	torsten@heydemann.eu	\N
+68	gfreiberg	lyYo/MyJgNm08NhO/9WUSEBZHOXM9KxQ	Freiberg	Gerd	Gerd.Freiberg@CGM.com	\N
+35	dbirkholz	MLxY+3sckdKUtsUrnmuMe4bh3/O0uqW8	Birkholz	Doro	Dorothee.Birkholz@CGM.com	\N
+51	eschmid	kF1hHYtrpS9LPsR4kDEw6iqoZH7Sjsbi	Schmid	Elmar	elmar-schmid@gmx.de	\N
+58	dhaeusser	h2UctcIfJbqD6unb96ENn1ZHSxh5KM6r	Häußer	Denis	orson@icloud.com	\N
+41	sgutmacher	fAaDdwdQx/pU0ygKN0rTFswkwIpPE4VI	Gutmacher	Sergej	sergej.gutmacher@cgm.com	\N
+21	smader	C1ktEAZtbEm0KxCzB3nUHf8sAu0XsOd7	Mader	Susanne	susi_mader@gmx.de	\N
+32	cfrohnhoefer	JFJ/RhwfNQW+hsvAl6sYEeU1I8hSdZHG	Frohnhöfer	Christoph	christoph.frohnhoefer@CGM.com	\N
+\.
+
+
+--
+-- Data for Name: UserBetgroup; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "UserBetgroup" ("userBetgroupId", "userId", "betgroupId") FROM stdin;
+3	12	1
+4	12	2
+11	23	1
+7	21	1
+12	24	1
+15	25	1
+17	27	1
+19	29	1
+22	30	1
+23	31	2
+26	34	2
+27	35	2
+28	36	2
+29	37	2
+30	38	2
+31	39	2
+33	41	2
+34	42	2
+35	43	2
+36	44	2
+37	45	2
+38	46	2
+39	47	2
+40	48	2
+41	49	2
+44	52	2
+45	53	2
+48	56	2
+49	57	2
+50	58	2
+51	59	2
+25	33	2
+32	40	2
+42	50	2
+52	60	2
+53	61	2
+47	55	2
+54	62	2
+55	63	1
+56	64	1
+57	65	1
+58	66	1
+18	28	1
+59	67	2
+46	54	2
+60	68	2
+43	51	2
+24	32	2
+\.
+
+
+--
+-- Name: UserBetgroup_userBetgroupId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"UserBetgroup_userBetgroupId_seq"', 60, true);
+
+
+--
+-- Data for Name: UserPost; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "UserPost" ("userPostId", "userId", "betgroupId", post, createdate) FROM stdin;
+10	40	2	Wie kommt es dass man bei der Europameisterschaft einen Weltmeister tippen kann? ;-)	2016-05-23 20:44:32.676
+11	12	2	Naja, wer Deutschland tippt, tippt doch den Weltmeister, oder? ;-)\r\n\r\nNein, ich habe das schon von mehreren Seiten vernommen und werde es mit dem nächsten Featurepack ausliefern.	2016-05-24 07:14:05.775
+12	33	2	Ich bin ganz oben in der Rangliste, besser jetzt als nie ;-)	2016-05-24 21:02:38.485
+13	12	2	Falls einer noch fragt wegen nicht erhaltener Mails:\r\n\r\nAnscheinend hat der CGM-Spamfilter einige Mails gefressen. Wer noch keine Einladung hat, bitte nochmal bei mir melden.	2016-05-25 12:57:22.503
+17	12	2	Bald gehts los, seid ihr alle daaaaaaa?	2016-06-09 08:22:51.517
+18	12	1	Bald gehts los, seid ihr alle daaaaaaa?	2016-06-09 08:22:54.748
+19	40	2	Jaaaaaaaaaaaaaa	2016-06-09 19:10:50.123
+20	30	1	Yep - da, und leidlich in formiert inzwischen, ob das mal gut geht. Am Donnerstag spielt England gegen Wales und rate mal wer bei den Walisern mitspielt....	2016-06-10 14:40:12.51
+21	12	1	Ich kenne nur den Bale, von daher...	2016-06-10 15:35:40.497
+22	28	1	Hallo Flo,\r\n\r\nfolgendes steht noch in den Spielregeln ;-) ('Weltmeister') und wir können den EM-Meister auch nur noch heute tippen und nicht bis vor den Achtelfinalen, oder?\r\n\r\n"Der Weltmeistertipp kann bis 30 Minuten vor Spielbeginn des ersten Achtelfinales abgegeben oder geändert werden.\r\nPunkte für Gruppensieger und Weltmeister gibt es, wenn die jeweiligen Sieger eingetragen wurden.\r\n\r\nLG,\r\nNickl getting ready...	2016-06-10 20:27:09.558
+23	28	1	Hallo Kädder!\r\n\r\nschön war's in Amsterdam! Ich habe keine Ahnung - wer spielt bei den Walisern?	2016-06-10 20:28:12.507
+24	12	1	Hallo Nicole,\r\n\r\nkorrigiere ich gleich. Der Weltmeister kann wie geschrieben auch noch später getippt werden.	2016-06-10 20:32:51.389
+25	28	1	Hey Flo, was is mit Deinem Handy - kein Anschluss unter dieser Nummer?! So oft rufen wir Dich jetzt auch wieder nicht an, dass Du gleich die Nummer wechseln musst.	2016-06-10 20:36:21.13
+26	12	1	Nicole,\r\n\r\nich wohne jetzt schon seit 8 Monaten hier und habe schon diverse Male mitgeteilt, dass ich hier keinen Empfang habe ;-)\r\n\r\nAber ich habe ein Festnetz, falls das was hilft... :-P	2016-06-10 20:46:19.024
+27	28	1	Tatsache, ich vergesse immer wieder dass Du jetzt in der schwäbischen Pampa wohnst, hihi :-)\r\nAber habe ich auf Festnetz versucht... auch kein Empfang?	2016-06-10 20:54:12.801
+28	12	1	Gewinnberechnung reparier ich morgen ;-)	2016-06-10 22:55:16.918
+29	12	2	Gewinnberechnung reparier ich morgen ;-)	2016-06-10 22:55:19.395
+30	59	2	Bernhard, du bist ja immer noch vorn! 😊	2016-06-11 10:46:03.229
+31	55	2	@Flo: Auch die Platzierungsnummern stimmen nicht :P	2016-06-11 11:39:44.772
+32	12	2	Schon gesehen, ist bereits in Reparatur.	2016-06-11 13:02:57.445
+33	12	1	So, Rangliste sollte repariert sein. Wenn einem noch was auffällt einfach melden.	2016-06-11 13:58:49.094
+34	12	2	So, Rangliste sollte repariert sein. Wenn einem noch was auffällt einfach melden.	2016-06-11 13:58:55.675
+35	24	1	Also, ich fand ja die "the winner takes it all" Variante gar nicht so schlecht! Sah ja ganz gut aus gestern Abend für Katrin mit 65€!	2016-06-11 15:05:46.713
+36	33	2	Jetzt bin ich aber nicht mehr oben...	2016-06-11 17:23:29.509
+37	30	1	Also heute gelesen in einer englischen Zeitung: "Wales and England as they are off to conquer Europe...." Lalala.  - Im Traum wohl. Wenn Fossilen Fussball spielen, dann vielleicht. Ich bin dann auch erstmal fuer Wales, trotz und obwohl Bale. Falls der und Ronaldo ein Kind bekommen wuerden allerdings das Wort Theatralisch eine ganz neue bedeutung bekommen...	2016-06-11 21:43:09.128
+38	30	1	Und in der 45ten Minute wird dann "God safe the Queen gesungen" (Stand 0:0). Da geht  er dahin mein Tip... Vielleicht sollten sie die Queen so wie die Angela auch mal in die Kabine lassen....	2016-06-11 21:48:00.311
+39	47	2	Futsch der Punkt.	2016-06-11 22:46:55.052
+40	58	2	Habe versehentlich auf den Taschenrechner geklickt. Kann man das rückgängig machen ?	2016-06-11 22:56:12.813
+41	66	1	Aktualisiere mal einer die Rangliste!! Hat denn irgendeiner dran geglaubt, dass die Engländer nicht gewinnen??? Würd mich echt interessieren. Ich vermute, dass in der Halbzeitpause der englischen Mannschaft was ins Erfrischungsgetränk gemischt wurde, anders ist das doch nicht zu erklären!	2016-06-11 23:04:48.214
+42	38	2	Warum gibt es keinen Sondertipp, dass England Gruppenletzter wird :)	2016-06-12 10:43:43.885
+43	12	2	Guter Punkt!!!\r\n\r\nDas merke ich mir für nächstes Mal. ;-)	2016-06-12 12:21:58.752
+44	12	2	@ Denis,\r\n\r\nnein kann man nicht. Aber du kannnst die Tipps jederzeit noch anpassen.	2016-06-12 12:22:28.134
+45	12	1	So, ist aktualisiert ^^.\r\n\r\nGlückwunsch zum richtigen Tipp. Da sieht man halt die ECHTEN Fußballkenner :-P	2016-06-12 22:51:52.309
+46	23	1	Das war das Beste Spiel bisher	2016-06-12 22:52:02.089
+47	12	1	Da hast du recht! Obwohl ich mir ein bisschen weniger Spannung am Ende auch hätte vorstellen können...	2016-06-12 22:53:19.558
+48	23	1	Wenn dann das Ergebis stimmt, dann wars ja gut	2016-06-12 22:54:20.698
+49	30	1	Und gerade als ich mir denke, warum man den jetzt quasi in der 90 Minute noch einwechselt..... - Gladiator forever *g*.	2016-06-12 23:40:28.167
+50	12	1	Ich gönns dem Schweini wirklich!!!	2016-06-13 16:57:08.842
+51	12	2	Seit ich anderen Leuten die Möglichkeit gegeben habe, die Ergebnisse einzutragen, muss ich gar nix mehr machen ^^.	2016-06-13 16:58:08.722
+52	23	1	so kann man sich täuschen	2016-06-13 22:51:39.258
+53	25	1	iiiiiiiiisLaaaaaaaaaaaaaaand!!!!	2016-06-14 22:53:26.181
+54	12	1	Jetzt wirds langsam lustig ^^	2016-06-15 06:58:59.162
+55	12	2	Wie ist das hier eigentlich? Weiß nur keiner, dass es die Laberbox gibt oder ist eure Tastatur kaputt?	2016-06-15 15:26:29.462
+56	40	2	Seit du nix mehr eintragen musst schreibst nix mehr und alle warten darauf dass du ein Thema eröffnest...	2016-06-15 17:59:40.92
+57	55	2	Die "Anderen" vernachlässigen Ihre Aufgabe des Punkteeintrages aber gewaltig :D	2016-06-15 20:01:47.939
+58	40	2	Allerdings!!!	2016-06-15 20:20:24.616
+59	55	2	Wo ist der "Gefällt mir"-Button? :)	2016-06-15 20:31:42.012
+60	12	2	Gibts nicht, ich bin doch kein Knecht der Massen...	2016-06-15 21:12:36.035
+61	49	2	Auf gehts Albanieser!	2016-06-15 21:17:35.617
+62	23	1	wow	2016-06-15 22:56:15.152
+63	30	1	Also rechtzeitig zum Spiel, haben Sie mich heute wieder rausgelassen aus Polen. Von allen Flughaefen haben die wohl die unlogischte Security - und jedes mal anders. Dieses mal wurden meine Haende und Klamotten auf Drogen gewischt-tested, nachdem es piepte als ich durch den Scanner lief?? kann mir das jemand erklaeren? Wie dem auch sei, schoene Ueberraschung hier bei meiner Rueckkehr *g* - jetzt muss es nur morgen gegen Polen klappen. Dafuer!	2016-06-16 00:27:26.922
+64	59	2	@Flo:\r\n\r\nb i mir isz di  T4?t4tür k4pütt	2016-06-16 17:23:36.686
+65	40	2	@Peter: \r\nich hoff das hast nicht an deinem Rechner in OED geschrieben!	2016-06-16 18:41:28.585
+66	12	2	So redet der auch...	2016-06-16 20:03:12.023
+67	24	1	Man sollte diese Nachspielzeit verbieten!\r\n2x lag ich gestern bis zur 90 min genau richtig und dann kommt jeweils in der\r\nNachspielzeit noch so ein total überflüssiges und unnötiges Tor!\r\nNur die Germans haben verpasst Schweini in der 89. Minute einzuwechseln.....	2016-06-17 07:16:36.451
+68	54	2	EM-Spiel wähend der Fahrt zu schauen/hören war auch ne neue Erfahrung für mich. ;)\r\nGrüße aus Düren\r\nEvi	2016-06-17 08:26:31.812
+69	12	1	Jammern hilft nicht, dass versuche ich schon seit 3 Tagen... ;-)	2016-06-17 13:03:33.85
+70	12	2	Schönen Urlaub!!!	2016-06-17 13:03:46.009
+71	24	1	Danke für den Tip Flo, dann putze ich jetzt mal besser meine Glasskugel!	2016-06-18 00:44:52.01
+72	27	1	Die Österreicher... Auf Sieg zu tippen war dann wohl doch zu optimistisch :-)	2016-06-18 23:11:39.72
+73	59	2	😂 Da ich in der Rangliste diesmal gar nix zu melden hab, gibts halt an Haufa Läddagschwätz!	2016-06-20 21:08:44.574
+74	59	2	Auf gehts, Wales! 😎	2016-06-20 21:42:35.412
+75	23	1	90 Minuten nur verteidigen, und das auch noch erfolgreich muss man auch erst mal hinkriegen	2016-06-20 22:55:03.292
+76	40	2	Nix zu sagen Peter? Bist innerhalb eines Tages vom unteren viertel der Rangliste auf Platz 5 gesprungen...	2016-06-21 08:04:02.293
+77	59	2	Verrückt...\r\n\r\nBzgl. "nix sagen": Flo hat das Panzertape ausgepackt.\r\n\r\nNach dem Motto:\r\n"DUCTTAPE - turning no-no-no into NNN-NNN-NNN" ;)	2016-06-21 15:28:23.248
+78	30	1	"Seniorenpaesse sind Flanken die den Ball laenger in der Luft halten so dass, die aelteren Spieler mehr Zeit haben nach vorne zum Ball zu laufen" - jetzt wisst ihr's ;-)	2016-06-22 17:12:18.951
+79	12	1	Oh Gott, jetzt wird mir so manche Szene in meiner Fußballerlaufbahn klar...	2016-06-22 17:30:51.138
+80	48	2	WOW! Was für ein Spiel! Portugal vs. Ungarn.	2016-06-22 19:52:38.251
+81	30	1	Ja, und mir so manches von Kalle's Geschrei. Haetsch halt mal a wengele mehr Obacht gaebe Little One..... Da faellt mir ein wie der Koos mir fuers erste mal HalfLive spielen die Maus langsamer gestellt hat - gleiches Prinzip... Auweia...	2016-06-22 23:15:06.498
+83	12	2	In der Gruppendarstellung ist noch ein Fehler bei der Sortierung. Der direkte Vergleich wird noch nicht berücksichtigt, weswegen aktuell Belgien Gruppnesieger ist, und nicht Italien.\r\n\r\nIch kümmere mich heute abend drum, im Anschluss sollten auch die Punkte im Ranking passen.	2016-06-23 08:37:03.342
+84	12	1	In der Gruppendarstellung ist noch ein Fehler bei der Sortierung. Der direkte Vergleich wird noch nicht berücksichtigt, weswegen aktuell Belgien Gruppnesieger ist, und nicht Italien.\r\n\r\nIch kümmere mich heute abend drum, im Anschluss sollten auch die Punkte im Ranking passen.	2016-06-23 08:37:11.407
+85	25	1	Na gut.... wenn man sich den Isländischen Kommentator anhört...\r\nda verzichte ich doch gerne mal auf 3 Punkte...\r\n\r\n😂😂😂😂😂😂😂	2016-06-23 15:29:04.489
+86	30	1	Also islaendisch - auf Englisch?? wie bist du denn daran gekommen? Englischer Kommentar ist superlangweiling und supernegativ allerdings fahren Sie in der Halbzeit immer Lothar Matthaeus auf und das ist superwitzing - auf Englisch... Vom Packing ist hier auch keine Rede - muss ein deutsches Ding sein..	2016-06-23 21:17:50.263
+87	25	1	http://youtu.be/DHE4D_H-7zY\r\n\r\nViel Spassssss	2016-06-24 09:22:01.558
+88	33	2	Nach einem Blich auf die Rangliste:\r\nIst der Fußballverstand eher weiblich oder spielen nur die Mannschaften falsch?\r\n(Ich tippe nur nach Sympathie fürs jeweilige Land...)	2016-06-25 13:13:47.668
+89	48	2	@Bernhard. Was soll dass denn heißen??? ;-)	2016-06-25 13:50:44.543
+90	50	2	Olala...das geht ja schon gut los ;)	2016-06-26 15:05:33.174
+91	30	1	Leute ganz ehrlich Lothar Matthaeus auf Englisch kommentierend auf ITV muesst ihr schauen. Ich weiss es ist gemein, und ganz ehrlich er ist mir inzwischen sogar einer der lieberen Kommentatoren/"Experten", aber sein Englisch zusammen mit der Gestik - ich schmeiss mich weg.	2016-06-26 19:00:30.935
+92	55	2	Ooooh wie ist das schön, Deutschlaaand Deutschlaaaand!! 😀	2016-06-26 19:45:05.574
+93	30	1	Jogi Loew's Einwechsestrategie entspricht der Boardingstratgie von Easyjet, mit dem Unterschied, dass Speedy Boarding bei Jogi am Schluss aufgerufen wird, und nur dann wenn man sicher ist, dass der Flug keine Verspaetung hat *g*.	2016-06-26 19:51:12.858
+94	59	2	Beschtes Geburtstagsgeschenk!!! 🎁😄	2016-06-26 22:06:04.252
+95	33	2	@Uli. Im Moment heißt das Julia, Siglinde, Claudia, Sabine.\r\nBei Dir ist Deine weiblich Seite am Wochenende zu wenig durchgekommen ;-). Aber alles nur Theorie	2016-06-27 07:28:03.431
+96	12	1	Ist aber doch die eindeutig angenehmere Art, oder? ;-)	2016-06-27 19:56:29.152
+97	59	2	Ha! Pwned by Sigthorsson! Wie geil ist das denn?! 😂	2016-06-27 22:52:12.291
+98	38	2	Mit einem siegtorson kann man einfach nur gewinnen :)	2016-06-27 22:52:12.653
+99	30	1	Only England can exit the Euro twice in one week! hehe. \r\n\r\n- mir ist mein Tip egal. Soviel Schadenfreude habe ich nicht mehr empfunden seit der Bayernchef ins Gefaengnis musste - nur dieses mal hab ich deswegen kein bisschen schlechtes Gewissen!	2016-06-28 02:08:10.241
+100	12	1	Voll geil!!! Ich habe schon nach den ersten beiden Toren gesagt, dass mir der Tipp egal ist. Hauptsache, das Spiel geht so weiter... ^^	2016-06-28 07:07:57.381
+101	12	2	Ich hätte ja ein klassisches Ausscheiden im Elfmeterschießene noch besser gefunden :-P.	2016-06-28 07:08:44.803
+102	30	1	"What is the difference between the English Football Team and a Bunch of Tea Bags?" - Tea Bags stay longer in the Cup *g*	2016-06-28 12:13:16.676
+103	59	2	Plödn Portugal... Elferschiessen. Das war genau mein erster Tipp! 😠 Hätte Hätte Fahrradkette...	2016-06-30 23:52:10.628
+104	55	2	@Peter: wenn Du schon so lange wach warst und Fußball geschaut hast, warum haste dann nicht gleich das Ergebnis eingetragen?? :P\r\nIch weiß, dass Du berechtigt bist!	2016-07-01 07:49:12.694
+105	59	2	Zu faul...	2016-07-01 11:58:17.486
+106	47	2	Hurra TOP TEN\r\nDanke Mama: Christian mit C	2016-07-01 14:59:16.637
+107	37	2	@Flo. Ich bin seit dem ersten Tag auf dem letzten Platz. Bist du sicher dass das kein Bug ist. ;-)	2016-07-01 15:57:47.355
+108	30	1	Also: Deutschland wird gewinnen gegen Italien und Mesut wird einen Elfmeter versenken also schiessen, meint verwandeln. Was ist denn dass richtige Wort hier.	2016-07-01 17:20:21.009
+109	40	2	So, jetzt steht es 3:1. Kann jetzt bitte jemand das Spiel beenden?	2016-07-01 22:46:10.833
+110	40	2	Bitte Ergebnis eintragen! Muss die Zeit auf Platz 3 doch genießen!!!	2016-07-02 08:41:57.652
+111	59	2	Erledigt 😊	2016-07-02 15:16:39.884
+112	40	2	Endlich! Schon Screenshot gemacht. Wird als Poster aufgehängt!	2016-07-02 15:41:55.324
+113	66	1	Es ist vollbracht!!!!!	2016-07-02 23:49:26.948
+114	59	2	Was ein Krimi!! 😂	2016-07-02 23:50:54.469
+115	30	1	Ja bis auf die Aufhebung des Penalty Fluchs der auf dem armen Mesut lastet. Ich bewundere ja, dass er es trotzdem immer wieder versucht! Trotzdem war meine Vorhersage nah dran ;-)	2016-07-05 17:15:26.796
+116	48	2	Christian's Tip ist der Beste! ;-)	2016-07-07 20:39:43.703
+117	40	2	Juhuuu!!!!!! Platz 3!	2016-07-10 23:35:14.791
+118	54	2	Das war so spannend.	2016-07-10 23:38:14.602
+119	55	2	Puuuuh haarscharf Platz 1 beibehalten 😅	2016-07-10 23:44:02.084
+\.
+
+
+--
+-- Name: UserPost_userPostId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"UserPost_userPostId_seq"', 119, true);
+
+
+--
+-- Data for Name: UserRole; Type: TABLE DATA; Schema: public; Owner: tippspiel
+--
+
+COPY "UserRole" ("userRoleId", "userId", "roleId") FROM stdin;
+38	12	5
+40	12	1
+45	27	5
+3	1	1
+2	1	5
+47	59	5
+46	29	5
+\.
+
+
+--
+-- Name: UserRole_userRoleId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"UserRole_userRoleId_seq"', 47, true);
+
+
+--
+-- Name: User_userId_seq; Type: SEQUENCE SET; Schema: public; Owner: tippspiel
+--
+
+SELECT pg_catalog.setval('"User_userId_seq"', 68, true);
+
+
+--
+-- Name: Bet_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "Bet"
+    ADD CONSTRAINT "Bet_pkey" PRIMARY KEY ("betId");
+
+
+--
+-- Name: Betgroup_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "Betgroup"
+    ADD CONSTRAINT "Betgroup_pkey" PRIMARY KEY ("betgroupId");
+
+
+--
+-- Name: BracketTeam_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "BracketTeam"
+    ADD CONSTRAINT "BracketTeam_pkey" PRIMARY KEY ("bracketTeamId");
+
+
+--
+-- Name: Bracket_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "Bracket"
+    ADD CONSTRAINT "Bracket_pkey" PRIMARY KEY ("bracketId");
+
+
+--
+-- Name: Phase_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "Phase"
+    ADD CONSTRAINT "Phase_pkey" PRIMARY KEY ("phaseId");
+
+
+--
+-- Name: Role_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "Role"
+    ADD CONSTRAINT "Role_pkey" PRIMARY KEY ("roleId");
+
+
+--
+-- Name: SoccerMatch_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "SoccerMatch"
+    ADD CONSTRAINT "SoccerMatch_pkey" PRIMARY KEY ("matchId");
+
+
+--
+-- Name: Team_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "Team"
+    ADD CONSTRAINT "Team_pkey" PRIMARY KEY ("teamId");
+
+
+--
+-- Name: UserBetgroup_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "UserBetgroup"
+    ADD CONSTRAINT "UserBetgroup_pkey" PRIMARY KEY ("userBetgroupId");
+
+
+--
+-- Name: UserPost_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "UserPost"
+    ADD CONSTRAINT "UserPost_pkey" PRIMARY KEY ("userPostId");
+
+
+--
+-- Name: UserRole_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "UserRole"
+    ADD CONSTRAINT "UserRole_pkey" PRIMARY KEY ("userRoleId");
+
+
+--
+-- Name: User_pkey; Type: CONSTRAINT; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+ALTER TABLE ONLY "User"
+    ADD CONSTRAINT "User_pkey" PRIMARY KEY ("userId");
+
+
+--
+-- Name: betgroupname_UNIQUE; Type: INDEX; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE UNIQUE INDEX "betgroupname_UNIQUE" ON "Betgroup" USING btree (betgroupname);
+
+
+--
+-- Name: bracketId_teamId_UNIQUE; Type: INDEX; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE UNIQUE INDEX "bracketId_teamId_UNIQUE" ON "BracketTeam" USING btree ("bracketId", "teamId");
+
+
+--
+-- Name: bracketname_UNIQUE; Type: INDEX; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE UNIQUE INDEX "bracketname_UNIQUE" ON "Bracket" USING btree (bracketname);
+
+
+--
+-- Name: phasename_UNIQUE; Type: INDEX; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE UNIQUE INDEX "phasename_UNIQUE" ON "Phase" USING btree (phasename);
+
+
+--
+-- Name: rolename_UNIQUE; Type: INDEX; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE UNIQUE INDEX "rolename_UNIQUE" ON "Role" USING btree (rolename);
+
+
+--
+-- Name: teamname_UNIQUE; Type: INDEX; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE UNIQUE INDEX "teamname_UNIQUE" ON "Team" USING btree (teamname);
+
+
+--
+-- Name: userId_betgroupId_UNIQUE; Type: INDEX; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE UNIQUE INDEX "userId_betgroupId_UNIQUE" ON "UserBetgroup" USING btree ("userId", "betgroupId");
+
+
+--
+-- Name: userId_roleId_UNIQUE; Type: INDEX; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE UNIQUE INDEX "userId_roleId_UNIQUE" ON "UserRole" USING btree ("userId", "roleId");
+
+
+--
+-- Name: username_UNIQUE; Type: INDEX; Schema: public; Owner: tippspiel; Tablespace: 
+--
+
+CREATE UNIQUE INDEX "username_UNIQUE" ON "User" USING btree (username);
+
+
+--
+-- Name: public; Type: ACL; Schema: -; Owner: postgres
+--
+
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON SCHEMA public FROM postgres;
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+
+--
+-- PostgreSQL database dump complete
+--
+

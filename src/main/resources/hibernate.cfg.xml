@@ -4,7 +4,7 @@
   <session-factory>
     <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
     <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
-    <property name="hibernate.connection.url">jdbc:postgresql://localhost:5432/tippspiel</property>
+    <property name="hibernate.connection.url">jdbc:postgresql://localhost:5433/tippspiel</property>
     <property name="hibernate.connection.username">tippspiel</property>
     <property name="hibernate.connection.password">7#a_N%XG</property>
     <property name="hibernate.c3p0.min_size">5</property>
