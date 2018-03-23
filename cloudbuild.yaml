@@ -3,3 +3,4 @@ steps:
   args: ['package']
 - name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', 'gcr.io/fx-fussballtipp-wicket/$REPO_NAME:$BRANCH_NAME', '.']
+ images: ['gcr.io/fx-fussballtipp-wicket/$REPO_NAME:$BRANCH_NAME']
