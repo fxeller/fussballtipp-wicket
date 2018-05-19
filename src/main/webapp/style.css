@@ -4,6 +4,11 @@ html,body
 	font-family: sans-serif;
 	margin: 0px;
 	padding: 0px;
+        background: url(background.jpg) no-repeat center center fixed; 
+        -webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+        background-size: cover;
 }
 
 a:link,
@@ -64,31 +69,33 @@ div.box
 div.navbar
 {
 	width: 230px;
-	background: #0B5F9C;
 }
 
 div.content
 {
-	background: white;
 }
 
 div.contentheader
 {
+        border: 1px solid black;
+        border-radius: 15px;
 	font-size: 3em;
 	text-align: center;
-	background-color: lightgray;
-	border-bottom: 1px solid black;
+	background-color: #c4474b;
 }
 
 div.contentbody
 {
+        border: 1px solid black;
+        border-radius: 25px;
+        background: rgba(255, 255, 255, 0.7);
 	padding: 50px;
+        margin-top: 20px;
 }
 
 div.infobar
 {
 	width: 230px;
-	background: #C1000B;
 }
 
 img
@@ -178,6 +185,11 @@ table, th, td
 tr:nth-child(even) 
 {
 	background-color: #E9967A;
+}
+
+tr:nth-child(odd) 
+{
+	background-color: #FFFFFF;
 }
 
 th 
