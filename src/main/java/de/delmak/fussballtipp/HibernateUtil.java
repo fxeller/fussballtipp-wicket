@@ -32,6 +32,20 @@ public class HibernateUtil
                             configuration.setProperty("hibernate.connection.url", connectionUrl);
                         }
                         
+                        String connectionUsername = System.getenv("CONNECTION_USERNAME");
+			
+                        if (connectionUsername != null)
+                        {
+                            configuration.setProperty("hibernate.connection.username", connectionUsername);
+                        }
+                        
+                        String connectionPassword = System.getenv("CONNECTION_PASSWORD");
+			
+                        if (connectionPassword != null)
+                        {
+                            configuration.setProperty("hibernate.connection.password", connectionPassword);
+                        }
+                        
                         Class.forName("org.postgresql.Driver"); 
                         
 			serviceRegistry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties()).build();  

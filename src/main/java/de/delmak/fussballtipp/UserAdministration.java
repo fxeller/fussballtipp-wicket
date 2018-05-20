@@ -182,7 +182,7 @@ public class UserAdministration extends BasePage
 							+ "deine%20Accountdaten%20lauten%20wie%20folgt:%0A%0A"
 							+ "Username:%20" + user.getUsername() + "%0A"
 							+ "Passwort:%20" + user.getPasswordinit()+ "%0A%0A"
-							+ "Adresse%20der%20Seite:%20https://tippspiel.emavok.eu/%0A%0A"
+							+ "Adresse%20der%20Seite:%20https://tippspiel.emavok.com/%0A%0A"
 							+ "Bitte%20ändere%20dein%20Passwort%20direkt%20nach%20der%20Anmeldung.%20Dies%20kannst%20du%20unter%20'Einstellungen->Passwort%20ändern'%20tun.%0A%0A"
 							+ "Viel%20Spaß%20beim%20Tippen!";
 					
