@@ -33,6 +33,14 @@
 		]]>
 	</query>
 
+	<query name="getUsersByBetgroupId_2">
+		<![CDATA[
+			select t1.user
+			from UserBetgroup t1
+			where t1.betgroup.betgroupId = :betgroupId
+		]]>
+	</query>
+
 	<query name="getBetgroupsByUserId">
 		<![CDATA[
 			select t1.betgroup

@@ -12,6 +12,7 @@ import java.util.Set;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
+import org.apache.wicket.markup.html.form.CheckBox;
 import org.apache.wicket.markup.html.form.CheckBoxMultipleChoice;
 import org.apache.wicket.markup.html.form.ChoiceRenderer;
 import org.apache.wicket.markup.html.form.Form;
@@ -160,6 +161,7 @@ public class UserAdministration extends BasePage
 					item.add(new Label("fldLastname", new PropertyModel(item.getModel(), "lastname")));
 					item.add(new Label("fldFirstname", new PropertyModel(item.getModel(), "firstname")));
 					item.add(new Label("fldEmail", new PropertyModel(item.getModel(), "email")));
+					item.add(new Label("fldHaspaidentryfeetext", new PropertyModel(item.getModel(), "haspaidentryfeetext")));
 					item.add(new Label("fldRoles", new Model(user.getUserRolesAsString())));
 					item.add(new Label("fldBetgroups", new Model(user.getUserBetgroupsAsString())));
 					
@@ -208,7 +210,7 @@ public class UserAdministration extends BasePage
 					};
 					lnkResetPassword.setVisible(user.getPasswordinit() == null);
 					item.add(lnkResetPassword);
-				}
+                                }
 			};
 		
 		pnlData.add(rptData);
@@ -292,6 +294,11 @@ public class UserAdministration extends BasePage
 		txtEmail.add(EmailAddressValidator.getInstance());
 		frmData.add(txtEmail);
 		
+		CheckBox chkHaspaidentryfee = new CheckBox("chkHaspaidentryfee", new PropertyModel(getUser(), "haspaidentryfee"));
+		chkHaspaidentryfee.setRequired(true);
+		chkHaspaidentryfee.setEnabled(getMode().equals(WicketApplication.MODE_INSERT) == true || getMode().equals(WicketApplication.MODE_MODIFY) == true);
+		frmData.add(chkHaspaidentryfee);
+				
 		List rolesChoice = Role.getListAll();
 		ChoiceRenderer rolesRenderer = new ChoiceRenderer("description", "roleId");
 		CheckBoxMultipleChoice cboRoles = new CheckBoxMultipleChoice("cboRoles", new PropertyModel(this, "selectedRoles"), rolesChoice, rolesRenderer)

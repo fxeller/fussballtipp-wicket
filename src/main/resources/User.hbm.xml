@@ -50,7 +50,13 @@
 			type="string">
 		</property>
 
-		<set
+		<property
+			name="haspaidentryfee"
+			column="haspaidentryfee"
+			type="boolean">
+		</property>
+
+                <set
 			name="userRoles"
 			cascade="all-delete-orphan">
 			<key column="`userId`" update="false"/>

@@ -65,6 +65,7 @@ public class BasePage extends WebPage
 		
 		add(new BookmarkablePageLink("lnkUserSettings", UserSettings.class).add(new BookmarkablePageLinkBehaviour()));
 		add(new BookmarkablePageLink("lnkRules", Rules.class).add(new BookmarkablePageLinkBehaviour()));
+		add(new BookmarkablePageLink("lnkUserEntryFeeAdministration", UserEntryFeedAministration.class).add(new BookmarkablePageLinkBehaviour()));
 
 		add(new BookmarkablePageLink("lnkUserAdministration", UserAdministration.class).add(new BookmarkablePageLinkBehaviour()));
 		add(new BookmarkablePageLink("lnkRoleAdministration", RoleAdministration.class).add(new BookmarkablePageLinkBehaviour()));

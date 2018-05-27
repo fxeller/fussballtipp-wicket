@@ -109,6 +109,18 @@ public class User extends HibernateObject
 		this.passwordinit = passwordinit;
 	}
 
+	private Boolean haspaidentryfee;
+
+	public Boolean isHaspaidentryfee()
+	{
+		return haspaidentryfee;
+	}
+
+	public void setHaspaidentryfee(Boolean haspaidentryfee)
+	{
+		this.haspaidentryfee = haspaidentryfee;
+	}
+
 	private Set userRoles = new HashSet();
 
 	public Set getUserRoles()
@@ -133,6 +145,16 @@ public class User extends HibernateObject
 		this.userBetgroups = userBetgroups;
 	}
 	
+	public String getHaspaidentryfeetext()
+	{
+            if (this.isHaspaidentryfee()) {
+                return "Ja";
+            }
+            else {
+                return "Nein";
+            }
+	}
+
 	public String getUserRolesAsString()
 	{
 		String result = "";

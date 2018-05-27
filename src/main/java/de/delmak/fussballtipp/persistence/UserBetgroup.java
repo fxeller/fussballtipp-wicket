@@ -85,6 +85,28 @@ public class UserBetgroup extends HibernateObject
 		}
 	}
 	
+	public static List getUsersByBetgroupId_2(Integer betgroupId)
+	{
+		try
+		{
+			beginTransaction();
+			
+			List resultRows = getSession()
+					.getNamedQuery("getUsersByBetgroupId_2")
+					.setInteger("betgroupId", betgroupId)
+					.list();
+			
+			commitTransaction();
+			
+			return resultRows;
+		}	
+		catch (Exception ex)
+		{
+			rollbackTransaction();
+			throw ex;
+		}
+	}
+	
 	public static List getBetgroupsByUserId(Integer userId)
 	{
 		try

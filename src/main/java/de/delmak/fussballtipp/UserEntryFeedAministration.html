@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:wicket="http://wicket.apache.org">
+	<head>
+		<title>XMans Fussballtipp</title>
+		<link rel="stylesheet" href="style.css" type="text/css" media="screen" title="Stylesheet" />
+	</head>
+	<body>
+		<wicket:extend>
+			<h1>Bezahlstatus</h1>
+			<div wicket:id="rptBetgroupFilter">
+				<a class="buttonlink" href="#" wicket:id="lnkBetgroupFilter"><span wicket:id="lblBetgroupFilter">[Betgroup.Description]</span></a>
+			</div>
+                        <table>
+                                <thead>
+                                        <th>Vorname</th>
+                                        <th>Nachname</th>
+                                        <th>Einsatz bezahlt</th>
+                                        <th></th>
+                                </thead>
+                                <tr wicket:id="rptData">
+                                        <td wicket:id="fldLastname">[User.lastname]</td>
+                                        <td wicket:id="fldFirstname">[User.firstname]</td>
+                                        <td wicket:id="fldHaspaidentryfeetext">[User.haspaidentryfeetext]</td>
+                                        <td>
+                                                <a href="#" wicket:id="lnkSwitchPaidState"><img src="money.png"/></a>
+                                        </td>
+                                </tr>
+                        </table>
+			<div wicket:id="pnlFeedback">[Feedback]</div>
+		</wicket:extend>
+	</body>
+</html>
