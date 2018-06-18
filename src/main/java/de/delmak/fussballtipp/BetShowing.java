@@ -135,7 +135,7 @@ public class BetShowing extends BasePage
 		Boolean showBets = false;
 		
 		Calendar targetDateTime = Calendar.getInstance();
-		targetDateTime.add(Calendar.MINUTE, 30);
+		targetDateTime.add(Calendar.MINUTE, 150);
 
 		if (getBetkind().equals(Bet.BETKIND_MATCH) == true)
 		{

@@ -98,7 +98,7 @@ public class Phase extends HibernateObject
 		Calendar currentDateTime = Calendar.getInstance();
 		Calendar closingDateTime = Calendar.getInstance();
 		closingDateTime.setTime(getMinDatetimeByPhaseId(getPhaseId()));
-		closingDateTime.add(Calendar.MINUTE, -30);
+		closingDateTime.add(Calendar.MINUTE, -150);
 		
 		return (currentDateTime.before(closingDateTime) == true);
 	}

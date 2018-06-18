@@ -74,7 +74,7 @@ public class Bracket extends HibernateObject
 		Calendar currentDateTime = Calendar.getInstance();
 		Calendar closingDateTime = Calendar.getInstance();
 		closingDateTime.setTime(BracketMinDatetime.getById(getBracketId()).getDatetime());
-		closingDateTime.add(Calendar.MINUTE, -30);
+		closingDateTime.add(Calendar.MINUTE, -150);
 		
 		return (currentDateTime.before(closingDateTime) == true);
 	}
