@@ -4,7 +4,7 @@ html,body
 	font-family: sans-serif;
 	margin: 0px;
 	padding: 0px;
-        background: url(background.jpg) no-repeat center center fixed; 
+        background: url(background_europe.png) no-repeat center center fixed;
         -webkit-background-size: cover;
         -moz-background-size: cover;
         -o-background-size: cover;
@@ -86,7 +86,7 @@ div.contentheader
         border-radius: 15px;
 	font-size: 3em;
 	text-align: center;
-	background-color: #c4474b;
+	background-color: #238cc7;
 }
 
 div.contentbody
@@ -125,7 +125,7 @@ ul.menu li a
 	display: block;
 	width: 160px;
 	color: black;
-	background-color: #78B1DF;
+	background-color: #238cc7;
 	border: 1px solid black;
 	padding: 8px 0 8px 16px;
 	margin-bottom: 1px;
@@ -133,13 +133,13 @@ ul.menu li a
 
 ul.menu li a:hover
 {
-	background-color: #78B1DF;
+	background-color: #238cc7;
 	font-weight: bold;
 }
 
 ul.menu li a.active
 {
-	background-color: #A9CDEB;
+	background-color: #ffe036;
 }
 
 form
@@ -151,12 +151,12 @@ legend
 {
 	font-weight: bold;
 	border: 1px solid black;
-	background-color: #78B1DF;
+	background-color: #ffe036;
 }
 
 fieldset
 {
-	background-color: #A9CDEB;
+	background-color: #238cc7;
 	padding-top: 10px;
 }
 
@@ -189,7 +189,7 @@ table, th, td
 
 tr:nth-child(even) 
 {
-	background-color: #E9967A;
+	background-color: #49b9f9;
 }
 
 tr:nth-child(odd) 
@@ -199,7 +199,7 @@ tr:nth-child(odd)
 
 th 
 {
-	background-color: #78B1DF;
+	background-color: #238cc7;
 }
 
 th, td
@@ -223,7 +223,7 @@ a.buttonlink
 {
 	display: inline-block;
 	padding: 10px 15px;
-	background: #78B1DF;
+	background: #238cc7;
 	border: 1px solid black;
 	border-radius: 4px;
 	margin-bottom: 10px;
@@ -236,7 +236,7 @@ a.buttonlink:hover
 
 a.buttonlink.active
 {
-	background-color: #A9CDEB;
+	background-color: #ffe036;
 }
 
 div.postnav
@@ -249,7 +249,7 @@ div.post
 {
 	width: 500px;
 	padding: 2px 2px 10px 2px;
-	background: #A9CDEB;
+	background: #ffe036;
 	border: 1px solid black;
 	border-radius: 4px;
 	margin-bottom: 20px;
@@ -258,7 +258,7 @@ div.post
 div.post div
 {
 	padding: 2px;
-	background: #78B1DF;
+	background: #238cc7;
 	border: 1px solid black;
 	font-size: 0.8em;
 }

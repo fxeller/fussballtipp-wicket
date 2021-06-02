@@ -153,7 +153,7 @@ public class BetShowing extends BasePage
 		else
 		if (getBetkind().equals(Bet.BETKIND_CHAMPION) == true)
 		{
-			betDescription = "Weltmeister";
+			betDescription = "Europameister";
 			bets = Bet.getListByBetKind(getBetkind(), userIds);
 			showBets = (Phase.getByName("Achtel").getDatefrom().before(targetDateTime.getTime()) == true);
 		}

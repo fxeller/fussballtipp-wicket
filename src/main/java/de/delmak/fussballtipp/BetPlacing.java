@@ -176,7 +176,7 @@ public class BetPlacing extends BasePage
 				lkpBet.setBetkind(Bet.BETKIND_CHAMPION);
 			}
 
-			winnerKind = "Weltmeister";
+			winnerKind = "Europameister";
 		}
 		
 		if (lkpBet != null)
